@@ -1,0 +1,45 @@
+\chapter{Input data, correctness, and measurement method}
+\section{Generating and checking the dataset}
+We generate \texttt{numbers.txt} with \(N=50\,000\,000\) random integers in the inclusive interval \([-1\,000\,000,1\,000\,000]\), one integer per line. The call to \texttt{Random.Next(minValue, maxValue + 1)} makes the upper limit inclusive. While generating the main file, we also write the same numbers, in the same order, into eight consecutive part files. Each part contains exactly \(6\,250\,000\) lines.
+
+The input used in the measurements occupies \(369\,439\,934\) bytes, approximately \(352.33\) MiB. We checked every line count and computed SHA-256 digests. Concatenating \texttt{numbers1.txt} through \texttt{numbers8.txt} reproduces the main file byte for byte. The manifest in \texttt{data/dataset\_manifest.json} records the exact sizes and hashes. The generator does not store its random seed, so the existing input and its hashes identify this experiment; generating a new input may produce different sign totals.
+
+\begin{lstlisting}[caption={Generating the same ordered data for the main file and the eight parts.}]
+int number = random.Next(minValue, maxValue + 1);
+mainWriter.WriteLine(number);
+partWriter.WriteLine(number);
+\end{lstlisting}
+
+For the current dataset, the correct result is
+\begin{equation}
+N_{-}=24\,996\,544,\qquad N_{+}=25\,003\,426,\qquad N_{0}=30,
+\end{equation}
+and therefore
+\begin{equation}
+N_{-}+N_{+}+N_{0}=50\,000\,000.
+\end{equation}
+A separate validation pass confirmed the reference counters for all seven Task 1a and all seven Task 1c configurations; these validation-pass timings are archived but are not substituted into the earlier performance curves. We require agreement in all three counters, not only in their sum. Equality of a sum alone could hide compensating mistakes. We use the correct per-thread result and the locked implementation as independent implementation checks, and retain validation output from the file-based tasks. The deliberately unsynchronised eight-thread version is expected to fail this check.
+
+\section{What exactly we measure}
+For Tasks 1a and 1c, the saved application sessions measure elapsed wall-clock time around launching and waiting for each processing program. File opening, reading, parsing, thread creation, joining, and process/runtime startup are included. We exclude data generation, compilation, chart generation, and report preparation.
+
+In Task 1b, we load the entire file into an \texttt{int[]} before starting the counting stopwatch. The timed region contains only the selected counting method, including its thread creation and final reduction. The raw integer payload alone needs
+\begin{equation}
+50\,000\,000\times4=200\,000\,000\text{ bytes}\approx190.73\text{ MiB}.
+\end{equation}
+Object headers, temporary loading allocations, threads, and runtime memory are additional costs. The supplementary Task 1b experiments include one-thread references so that a genuine speed-up relative to one thread can be calculated for each algorithm.
+
+Peak memory is the process-wide maximum resident set size reported by macOS \texttt{/usr/bin/time -l}. On this system it is reported in bytes; we divide by \(2^{20}\) to display MiB. It is resident physical memory, not reserved virtual address space and not just the managed heap. For the supplementary Task 1b measurements, the process peak includes array loading even though loading is excluded from the counting time. Consequently, those memory values describe the whole program's requirement, not an isolated allocation cost of the counting loop.
+
+For Task 2, we measure the complete processing command on the actual USB volume. Before each of the three recorded configurations, we safely eject the drive, physically disconnect it, and reconnect it. Spotlight indexing is disabled and its status is checked after reconnection. We do not read or hash the part-file contents between reconnection and the timed run.
+
+\section{Speed-up and interpretation}
+For a fixed algorithm and input, we calculate
+\begin{equation}
+S(p)=\frac{T(1)}{T(p)},\qquad E(p)=\frac{S(p)}{p}.
+\end{equation}
+A speed-up above one means that the configuration is faster than its own one-thread reference. A value below one is a slowdown. For example, \(S(p)=3\) means three times faster, not a 300\% reduction in elapsed time. For Task 1b, each version has its own reference; a ratio for the incorrect unsynchronised version is a timing observation only, not a valid speed-up of a correct computation.
+
+We retain two real application snapshots, taken at approximately 15:43 and 16:42. The later snapshot is the primary source for Tasks 1a and 1c; the earlier snapshot provides a limited repeatability check. We do not describe two runs as a statistical confidence interval. The USB results previously shown by the menu have unverified storage/cache provenance and are excluded from the cold-cache USB conclusions. We preserve them in the raw archive rather than silently relabel them.
+
+Background activity, runtime compilation, garbage collection, CPU scheduling, and the filesystem cache can influence timings. The internal-disk experiments did not force a cold cache. We therefore interpret them as measurements of the complete implementation under the recorded conditions, not as isolated SSD throughput or proof of a purely CPU-bound workload.

@@ -1,0 +1,58 @@
+\chapter{Software architecture and UML models}
+\section{Responsibilities and process boundaries}
+We separate user interaction, experiment coordination, counting algorithms, measurement storage, and visualisation. The separation is implemented by concrete classes and separate file-based programs; it is not an inheritance hierarchy or a framework of interchangeable interfaces. Table~\ref{tab:architecture} maps those responsibilities to the submitted source files.
+
+\begin{table}[H]\centering\small
+\caption{Architecture of the implemented laboratory application.}\label{tab:architecture}
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}p{0.25\textwidth}X@{}}\toprule
+Element & Location / lifetime & Responsibility\\\midrule
+\texttt{Program} & \texttt{Program.cs}; controller process & Creates the collectors and application, reads menu choices, and launches the Drawer for option \texttt{d}.\\
+\texttt{Application} & \texttt{Program.cs}; controller process & Generates input; runs each use case and configuration; caches Task 1b's array; coordinates measurement and error checks.\\
+Four metric collectors & \texttt{Program.cs}; controller process & Retain per-configuration metric records in memory and export the lists for plotting.\\
+\texttt{TaskOneB} & \texttt{TaskOneB.cs}; called directly & Implements the three counting functions over the preloaded, read-only integer array; returns \texttt{SignCounts}.\\
+Task 1a / 1c / 2 programs & Separate file-based executables & Create their own worker threads, read the selected input, print sign totals, and return an exit status.\\
+\texttt{Drawer} & \texttt{Drawer.cs}; separate process & Receives a JSON snapshot, creates HTML/SVG charts and tables, and opens the saved report in a browser.\\
+Reproduction entry point & \texttt{documentation/}\newline\texttt{reproduce/} & Selects tasks by command-line parameters and provides the supplementary Task 1b benchmark used in this report.\\\bottomrule
+\end{tabularx}
+\end{table}
+
+The controller is the program whose menu we operate. Tasks 1a, 1c, and 2 run as child processes for each measured configuration. Each child can itself create multiple OS threads; a process boundary and a thread boundary are therefore different parts of our design. The three task files each declare a class named \texttt{Program}, which is valid because they are built separately, not combined into one assembly with competing entry points.
+
+Task 1b is different: the controller calls the static \texttt{TaskOneB} methods directly so that it can load the array before starting the counting stopwatch. The supplementary benchmark preserves the same distinction between loading and counting, but runs independently to provide additional one-thread references and whole-process memory measurements.
+
+\section{UML class diagram: coordination and metrics}
+Figure~\ref{fig:umlclasses} shows the main controller classes and the four concrete collector associations. A solid navigable association means that \texttt{Application} keeps a reference to one collector of that type. The dashed dependency marked \emph{create} means that \texttt{Program.Main} constructs \texttt{Application}; the same method constructs and supplies the four collectors through the application constructor. We use plain associations, rather than composition diamonds, because the application receives those objects instead of constructing or exclusively owning them.
+
+\begin{figure}[H]\centering
+\begingroup\singlespacing
+\resizebox{\textwidth}{!}{\input{uml/classes}}
+\endgroup
+\caption{UML class diagram of the controller and metric collectors. Selected members are shown; parameter lists are shortened where marked by dots. A plus sign denotes public access and a minus sign denotes private access. Underlined operations are static.}\label{fig:umlclasses}
+\end{figure}
+
+The diagram deliberately preserves the current source names, including \texttt{MetriccolelctorTaskOneA} and \texttt{MetriccolelctorTaskOneC}. The Task 1c collector currently exports \texttt{MetricTaskOneA} records: it reuses their thread/time/memory data shape. Although a separate \texttt{MetricTaskOneC} record is declared in the source, this collector does not use that type. We describe the implementation as it exists rather than introduce a class relationship that is absent from the code.
+
+The records represent measurements, not running tasks. Task 1b records retain the algorithm version, repetition, worker count, time, and all three sign counters. The other active metric records retain a worker/thread count, elapsed time, and peak-memory value; their task programs print sign totals separately. A successful child exit is checked by the menu, while the report's reproduction and validation procedure additionally checks the actual printed counters against the dataset reference.
+
+\section{UML sequence diagram: measure first, visualise later}
+Figure~\ref{fig:umlsequence} follows one Task 1a configuration and the later drawing request. The other file-based tasks follow the same launch--wait--collect structure. The diagram's vertical dashed lines are participant lifelines; solid arrows show calls or actions, and dashed arrows show completion or returned information. The narrow rectangles mark periods of execution. The collector is an object in the controller process, while the task and Drawer lifelines represent separate child processes.
+
+\begin{figure}[H]\centering
+\begingroup\singlespacing
+\resizebox{\textwidth}{!}{\input{uml/sequence}}
+\endgroup
+\caption{UML sequence diagram for a measured Task 1a run followed by option \texttt{d}. The export step represents all four collectors; the browser itself is outside the displayed participants.}\label{fig:umlsequence}
+\end{figure}
+
+First, the collector starts the outer stopwatch. The application then launches \texttt{/usr/bin/time} around the appropriate \texttt{dotnet} task command, waits for completion, checks its exit code, and reads the peak RSS from the time-report file. Finally, it stops collection and saves a metric record. The peak-memory value used by these use cases comes from that report; the presence of a memory-tracking helper elsewhere in a collector does not mean that helper is the active measurement path.
+
+When we later select \texttt{d}, \texttt{Program} exports the four metric lists, serialises their values as JSON, and writes the snapshot to the Drawer's redirected standard input. Closing that input is part of the protocol: \texttt{Drawer.Main} reads until the end of the stream before deserialising. It builds the HTML report, saves it, opens the browser, and returns an exit status. The controller can then display its menu again without waiting for the browser tab to close.
+
+The snapshot is independent of the counting algorithms. Browser checkboxes select which Task 1b runs are drawn and recalculate chart scales; they do not rerun benchmarks or modify the original measured counters. Choosing \texttt{d} again creates a fresh snapshot from the controller's current in-memory records.
+
+\section{How the architecture affects the experiment}
+A fresh worker process gives each file-based configuration its own runtime state and peak-RSS high-water mark. It avoids attributing a previous configuration's peak resident memory to the next one. It does not reset the operating system's filesystem cache, which is why the USB reconnect procedure remains necessary.
+
+The controller's cached Task 1b array and the browser live outside a Task 1a/1c/2 child process. Their memory is therefore not part of that child's peak RSS. Conversely, the supplementary Task 1b benchmark loads its array within its own process, so its external process peak includes loading even though its counting stopwatch excludes it. These process boundaries explain the memory scope used throughout the results.
+
+Thread ownership differs inside each algorithm. Task 1a assigns byte ranges before starting workers; Task 1b shares a read-only array but varies ownership of the counters; Task 1c transfers batches through a bounded queue; Task 2 assigns whole-file intervals. We keep those choices inside their task implementations rather than letting the menu manage individual numbers, lines, or queue operations. The following task chapters show the actual source code implementing each choice.

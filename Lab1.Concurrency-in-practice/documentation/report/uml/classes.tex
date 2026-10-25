@@ -1,0 +1,39 @@
+\begin{tikzpicture}[
+  umlclass/.style={draw=codeblue,fill=white,rectangle split,rectangle split parts=2,rectangle split part align={center,left},text width=7.1cm,inner sep=7pt,font=\small},
+  assoc/.style={-{Straight Barb[length=2.5mm]},line width=.8pt,draw=codeblue},
+  dep/.style={assoc,dashed},
+  every node/.append style={align=left}]
+\node[umlclass,text width=4.6cm] (program) at (0,0) {\textbf{Program}
+\nodepart{second}\underline{\texttt{+ Main(args)}}\\\underline{\texttt{- drawMenu()}}\\\underline{\texttt{- chooseOption()}}};
+\node[umlclass,text width=8cm] (app) at (0,-4.5) {\textbf{Application}
+\nodepart{second}\texttt{- \_taskOneBNumbers : int[]?}\\
+\texttt{+ GenerateFileUseCase()}\\
+\texttt{+ TaskOneAUseCase()}\\
+\texttt{+ TaskOneBUseCase()}\\
+\texttt{+ TaskOneCUseCase()}\\
+\texttt{+ TaskTwoUseCase()}};
+\node[umlclass] (a) at (-4.1,-9.3) {\textbf{MetriccolelctorTaskOneA}
+\nodepart{second}\texttt{+ Collect(process, threads)}\\
+\texttt{+ StopCollect(threads, peakBytes)}\\
+\texttt{+ ExportMetrics()}\\
+\texttt{\phantom{+ } : List<MetricTaskOneA>}};
+\node[umlclass] (b) at (4.1,-9.3) {\textbf{MetricCollectorTaskOneB}
+\nodepart{second}\texttt{+ Measure(..., algorithm)}\\
+\texttt{+ ExportMetrics()}\\
+\texttt{\phantom{+ } : List<MetricTaskOneB>}};
+\node[umlclass] (c) at (-4.1,-13.5) {\textbf{MetriccolelctorTaskOneC}
+\nodepart{second}\texttt{+ Collect(process, threads)}\\
+\texttt{+ StopCollect(threads, peakBytes)}\\
+\texttt{+ ExportMetrics()}\\
+\texttt{\phantom{+ } : List<MetricTaskOneA>}};
+\node[umlclass] (two) at (4.1,-13.5) {\textbf{MetricCollectorTaskTwo}
+\nodepart{second}\texttt{+ Collect()}\\
+\texttt{+ StopCollect(workers, peakBytes)}\\
+\texttt{+ ExportMetrics()}\\
+\texttt{\phantom{+ } : List<MetricTaskTwo>}};
+\draw[dep] (program) -- node[right,font=\small]{\textless\textless create\textgreater\textgreater} (app);
+\draw[assoc] (app.south) -- (0,-7.1) -| node[pos=.88,right,font=\small]{1} (a.north);
+\draw[assoc] (0,-7.1) -| node[pos=.88,right,font=\small]{1} (b.north);
+\draw[assoc] (app.west) -- (-8.3,-4.5) |- node[pos=.94,above,font=\small]{1} (c.west);
+\draw[assoc] (app.east) -- (8.3,-4.5) |- node[pos=.94,above,font=\small]{1} (two.east);
+\end{tikzpicture}

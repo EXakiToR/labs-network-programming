@@ -1,0 +1,26 @@
+[
+  {
+    "file": "TaskOneA.cs",
+    "source": "code/TaskOneA.cs",
+    "sha256": "9e66adba136bc359eb317e2cd3d8af143064a853965697f5a541d5ce4f7622e6",
+    "bytes": 6846
+  },
+  {
+    "file": "TaskOneB.cs",
+    "source": "code/TaskOneB.cs",
+    "sha256": "14403603f8be96a04fb296d900410fe195007f2231ced0b62446016364a086d2",
+    "bytes": 3059
+  },
+  {
+    "file": "TaskOneC.cs",
+    "source": "code/TaskOneC.cs",
+    "sha256": "d0e2a3a0f2ea93330f17186c7b5a68e531ce0cd8f300bfa3288866573f915fe3",
+    "bytes": 5403
+  },
+  {
+    "file": "TaskTwo.cs",
+    "source": "code/TaskTwo.cs",
+    "sha256": "8f5413a89ed8fcc0facc3092dc0c0f0dc27d8f8078d107cde977ae0471b6e75a",
+    "bytes": 5464
+  }
+]

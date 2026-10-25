@@ -1,0 +1,40 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{\numberline {1}Introduction and experimental platform}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Purpose of the laboratory work}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Hardware and software}{1}{section.1.2}%
+\contentsline {chapter}{\numberline {2}Software architecture and UML models}{2}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Responsibilities and process boundaries}{2}{section.2.1}%
+\contentsline {section}{\numberline {2.2}UML class diagram: coordination and metrics}{3}{section.2.2}%
+\contentsline {section}{\numberline {2.3}UML sequence diagram: measure first, visualise later}{5}{section.2.3}%
+\contentsline {section}{\numberline {2.4}How the architecture affects the experiment}{6}{section.2.4}%
+\contentsline {chapter}{\numberline {3}Input data, correctness, and measurement method}{6}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Generating and checking the dataset}{6}{section.3.1}%
+\contentsline {section}{\numberline {3.2}What exactly we measure}{7}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Speed-up and interpretation}{8}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Task 1a: partitioning one file among threads}{9}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Implementation and boundary ownership}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Source code: worker creation, boundaries, and counting}{9}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Measured results}{12}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Answers concerning scaling and memory}{13}{section.4.4}%
+\contentsline {chapter}{\numberline {5}Task 1b: shared counters, locking, and local counters}{14}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Three implementations of the same counting operation}{14}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Source code: all three counting methods}{14}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Measurements and correctness}{17}{section.5.3}%
+\contentsline {section}{\numberline {5.4}How an update is lost}{18}{section.5.4}%
+\contentsline {chapter}{\numberline {6}Task 1c: a producer and consumers}{19}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Pipeline, batching, and termination}{19}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Source code: queue lifecycle and both pipeline stages}{19}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Measured results and comparison}{22}{section.6.3}%
+\contentsline {chapter}{\numberline {7}Task 2: eight files on the USB flash drive}{24}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Implementation and cold-cache procedure}{24}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Source code: file assignment, buffering, and parsing}{24}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Measured results}{27}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Answers about storage and concurrency}{27}{section.7.4}%
+\contentsline {chapter}{\numberline {8}Answers to all control questions}{29}{chapter.8}%
+\contentsline {chapter}{\numberline {9}Build, run, and inspect the implementation}{31}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Source organisation and command-line entry point}{31}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Measuring a processing command on macOS}{32}{section.9.2}%
+\contentsline {section}{\numberline {9.3}USB preparation and access}{32}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Dashboard and evidence}{32}{section.9.4}%
+\contentsline {chapter}{\numberline {10}Conclusions}{33}{chapter.10}%
+\contentsline {chapter}{Bibliography}{34}{section*.16}%

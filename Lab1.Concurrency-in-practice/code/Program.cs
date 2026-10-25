@@ -15,6 +15,45 @@ public record MetricTaskOneB(
     long Positive,
     long Zero
 );
+public record MetricTaskTwo(
+    int Workers,
+    long ElapsedMs,
+    long PeakMemoryBytes
+);
+
+
+public class MetricCollectorTaskTwo
+{
+    private Stopwatch? _stopwatch;
+
+    private readonly List<MetricTaskTwo> _metrics = new();
+
+    public void Collect()
+    {
+        _stopwatch = Stopwatch.StartNew();
+    }
+
+    public void StopCollect(int workers, long peakMemoryBytes)
+    {
+        if (_stopwatch is null)
+            throw new InvalidOperationException(
+                "Measurement has not started.");
+
+        _stopwatch.Stop();
+
+        _metrics.Add(new MetricTaskTwo(
+            workers,
+            _stopwatch.ElapsedMilliseconds,
+            peakMemoryBytes
+        ));
+    }
+
+    public List<MetricTaskTwo> ExportMetrics()
+    {
+        return _metrics;
+    }
+}
+
 
 public class MetricCollectorTaskOneB
 {
@@ -195,14 +234,22 @@ public class Application
     private readonly MetriccolelctorTaskOneC _metricCollectorTaskOneC;
 
     private readonly MetricCollectorTaskOneB _metricCollectorTaskOneB;
+    private readonly MetricCollectorTaskTwo _metricCollectorTaskTwo;
     private int[]? _taskOneBNumbers;
 
-    public Application(MetriccolelctorTaskOneA metricCollectorTaskOneA, MetriccolelctorTaskOneC metricCollectorTaskOneC, MetricCollectorTaskOneB metricCollectorTaskOneB)
+    
+    public Application(
+        MetriccolelctorTaskOneA metricCollectorTaskOneA,
+        MetriccolelctorTaskOneC metricCollectorTaskOneC,
+        MetricCollectorTaskOneB metricCollectorTaskOneB,
+        MetricCollectorTaskTwo metricCollectorTaskTwo)
     {
         _metricCollectorTaskOneA = metricCollectorTaskOneA;
         _metricCollectorTaskOneC = metricCollectorTaskOneC;
         _metricCollectorTaskOneB = metricCollectorTaskOneB;
+        _metricCollectorTaskTwo = metricCollectorTaskTwo;
     }
+
 
     private int[] GetTaskOneBNumbers()
     {
@@ -422,12 +469,64 @@ public void TaskOneBLocalCountersUseCase()
         Console.WriteLine("Task 1C Finished.");
     }
 
+    
     public void TaskTwoUseCase()
     {
         Console.WriteLine("Running Task 2...");
 
+        foreach (int workers in new[] { 1, 2, 4, 8, 16, 32, 64 })
+        {
+            string reportPath = Path.GetTempFileName();
+
+            try
+            {
+                using var process = new Process();
+
+                process.StartInfo.FileName = "/usr/bin/time";
+                process.StartInfo.ArgumentList.Add("-l");
+                process.StartInfo.ArgumentList.Add("-o");
+                process.StartInfo.ArgumentList.Add(reportPath);
+
+                process.StartInfo.ArgumentList.Add("dotnet");
+                process.StartInfo.ArgumentList.Add(
+                    Path.GetFullPath("./artifacts/TaskTwo/TaskTwo.dll")
+                );
+                process.StartInfo.ArgumentList.Add(workers.ToString());
+
+                process.StartInfo.UseShellExecute = false;
+
+                _metricCollectorTaskTwo.Collect();
+
+                process.Start();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    throw new Exception("TaskTwo failed.");
+
+                string line = File.ReadLines(reportPath)
+                    .First(l => l.Contains("maximum resident set size"));
+
+                long peakMemoryBytes = long.Parse(
+                    line.Split(
+                        (char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries
+                    )[0]
+                );
+
+                _metricCollectorTaskTwo.StopCollect(
+                    workers,
+                    peakMemoryBytes
+                );
+            }
+            finally
+            {
+                File.Delete(reportPath);
+            }
+        }
+
         Console.WriteLine("Task 2 Finished.");
     }
+
 
 }
 
@@ -438,8 +537,14 @@ class Program
         var metricCollectorTaskOneB = new MetricCollectorTaskOneB();
         var matricCollectorTaskOneA = new MetriccolelctorTaskOneA();
         var matricCollectorTaskOneC = new MetriccolelctorTaskOneC();
+        var metricCollectorTaskTwo = new MetricCollectorTaskTwo();
 
-        var app = new Application(matricCollectorTaskOneA, matricCollectorTaskOneC, metricCollectorTaskOneB);
+        var app = new Application(
+            matricCollectorTaskOneA,
+            matricCollectorTaskOneC,
+            metricCollectorTaskOneB,
+            metricCollectorTaskTwo
+        );
 
         while (true)
         {
@@ -472,27 +577,60 @@ class Program
                     break;
 
                 case 'd':
+                {
                     Console.WriteLine("Drawing results...");
-
-                    Console.WriteLine("Results for TaskOneA");
-                    foreach (var metric in matricCollectorTaskOneA.ExportMetrics())
+                    // Use JSON nodes so the file-based app also supports native AOT.
+                    static System.Text.Json.Nodes.JsonObject Row(
+                        params (string Name, System.Text.Json.Nodes.JsonNode? Value)[] fields)
                     {
-                        Console.WriteLine(metric);
+                        var row = new System.Text.Json.Nodes.JsonObject();
+                        foreach (var field in fields)
+                            row[field.Name] = field.Value;
+                        return row;
                     }
 
-                    Console.WriteLine("Results for TaskOneC");
-                    foreach (var metric in matricCollectorTaskOneC.ExportMetrics())
-                    {
-                        Console.WriteLine(metric);
-                    }
+                    static string DrawerPath(
+                        [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
+                        => Path.Combine(Path.GetDirectoryName(sourcePath)!, "Drawer.cs");
 
-                    Console.WriteLine("Task 1B results:");
+                    string results = Row(
+                        ("TaskOneA", new System.Text.Json.Nodes.JsonArray(
+                            matricCollectorTaskOneA.ExportMetrics().Select(m => Row(
+                                ("Threads", m.Threads), ("ElapsedMs", m.ElapsedMs),
+                                ("PeakMemoryBytes", m.peakMemoryBytes))).ToArray())),
+                        ("TaskOneB", new System.Text.Json.Nodes.JsonArray(
+                            metricCollectorTaskOneB.ExportMetrics().Select(m => Row(
+                                ("Version", m.Version), ("Run", m.Run), ("Workers", m.Workers),
+                                ("ElapsedMs", m.ElapsedMs), ("Negative", m.Negative),
+                                ("Positive", m.Positive), ("Zero", m.Zero))).ToArray())),
+                        ("TaskOneC", new System.Text.Json.Nodes.JsonArray(
+                            matricCollectorTaskOneC.ExportMetrics().Select(m => Row(
+                                ("Threads", m.Threads), ("ElapsedMs", m.ElapsedMs),
+                                ("PeakMemoryBytes", m.peakMemoryBytes))).ToArray())),
+                        ("TaskTwo", new System.Text.Json.Nodes.JsonArray(
+                            metricCollectorTaskTwo.ExportMetrics().Select(m => Row(
+                                ("Workers", m.Workers), ("ElapsedMs", m.ElapsedMs),
+                                ("PeakMemoryBytes", m.PeakMemoryBytes))).ToArray()))
+                    ).ToJsonString();
 
-                    foreach (var metric in metricCollectorTaskOneB.ExportMetrics())
+                    var startInfo = new ProcessStartInfo("dotnet")
                     {
-                        Console.WriteLine(metric);
-                    }
+                        UseShellExecute = false,
+                        RedirectStandardInput = true
+                    };
+                    startInfo.ArgumentList.Add("run");
+                    startInfo.ArgumentList.Add("--file");
+                    startInfo.ArgumentList.Add(DrawerPath());
+
+                    using var drawer = Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Could not start Drawer.");
+                    drawer.StandardInput.Write(results);
+                    drawer.StandardInput.Close();
+                    drawer.WaitForExit();
+                    if (drawer.ExitCode != 0)
+                        Console.WriteLine("Drawer could not display the results. See the error above.");
                     break;
+                }
 
                 case 'a':
                     Console.WriteLine("Running all tasks...");

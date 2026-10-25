@@ -1,0 +1,44 @@
+\chapter{Task 2: eight files on the USB flash drive}
+\section{Implementation and cold-cache procedure}
+We place the eight ordered part files on \texttt{/Volumes/ESD-USB}. A file is the unit of work. Each worker reads a whole assigned file with \texttt{File.ReadAllBytes}, parses the returned byte buffer, updates local counters, and proceeds to its next file. The library method returns a byte array containing the complete file~\cite{readallbytes}. One application-level read call does not imply that the operating system performs exactly one physical USB request.
+
+\section{Source code: file assignment, buffering, and parsing}
+The actual worker-creation loop assigns a half-open interval of file indices to each thread. The captured \texttt{workerIndex} chooses both the interval and the worker's output/error slots. All workers are joined before the caller checks errors and combines the counters.
+
+\sourcecode{TaskTwo.cs}{45}{74}{Task 2: balanced file assignment, worker startup, and completion.}
+
+The complete \texttt{CountFiles} method reads one assigned file at a time into one byte array. It does not construct a list of lines. Each buffer is parsed before the worker advances to its next file.
+
+\sourcecode{TaskTwo.cs}{101}{118}{Task 2: whole-file byte-buffer reading for each assigned file.}
+
+The parser first skips separators (the preceding part of \texttt{CountNumbers}), then performs the sign, digit, and classification logic shown below. \texttt{checked} prevents silently wrapping an out-of-range value. The remainder of the method rejects non-separator characters after an integer, so malformed input is reported rather than counted as a successful partial read.
+
+\sourcecode{TaskTwo.cs}{143}{178}{Task 2: actual sign parsing, checked digit accumulation, and classification inside CountNumbers.}
+
+
+With one thread, the worker processes eight files sequentially; with two, each handles four files; with four, each handles two. We use only the required 1, 2, and 4 threads for the cold-cache experiment. Using more than eight threads would leave some workers without an assigned file because there are only eight independent work units.
+
+We disabled Spotlight indexing on the volume. Before each measurement, we safely ejected the device, unplugged it, and reconnected it. We checked that indexing remained disabled, then immediately ran the relevant configuration without previewing or reading the input files. All three commands use the explicit absolute USB directory. We corrected the previous relative path \texttt{Volumes/ESD-USB}; without its leading slash it referred to a different location relative to the current working directory.
+
+\section{Measured results}
+\input{data/task2_table}
+\resultfigure{task2.pdf}{Task 2: actual USB reads after a separate physical reconnect for every configuration. Speed-up uses the cold one-thread USB time. Peak memory includes complete-file byte buffers and runtime allocations.}{fig:task2}
+
+Every cold-cache run returns the same three reference counters and a total of 50 million. The input volume and individual file contents are the same workload as in Task 1, but buffering and parsing implementations differ; this matters when comparing absolute times.
+
+\section{Answers about storage and concurrency}
+\question{1}{How does one USB thread compare with one internal-disk thread? Is the USB work CPU-bound or I/O-bound?}
+Task 1a on one thread takes 3876 ms in the primary internal-disk session. The cold USB run takes \USBOneMs{} ms, a ratio of approximately \USBvsSSD{}. The USB command's application throughput is about \USBOneMBs{} MB/s, calculated from the full input byte size and elapsed time. This is application throughput, including parsing and startup, not an isolated benchmark of the USB link.
+
+The one-thread USB process uses 1.95 s of user CPU time and 0.12 s of system CPU time during 4.67 s of measured real time. Thus approximately 2.07 s of CPU time accounts for only about 44\% of the elapsed time. This indicates a substantial non-CPU component, consistent with waiting for cold external-storage reads. It does not mean that every remaining millisecond can be attributed exclusively to the flash hardware: scheduling and runtime behaviour also contribute.
+
+We classify this cold USB workload as storage-sensitive, with a substantial I/O-wait component, rather than purely CPU-bound. We also avoid claiming that the whole difference from Task 1a is caused by the drive: Task 1a streams 64 KiB buffers, whereas Task 2 allocates whole-file buffers and uses a different parser. A stricter isolation of device cost would run the same Task 2 algorithm on both devices under matched cache conditions.
+
+\question{2}{Do more USB threads help? Why is this different from a server waiting on the network?}
+The measured times are \USBOneMs{}, \USBTwoMs{}, and \USBFourMs{} ms for one, two, and four threads, giving speed-ups of \USBSpeedTwo{} and \USBSpeedFour{} for two and four threads. \USBScalingInterpretation{} The four-thread run is only about 0.4\% slower than the two-thread run. With one run per USB configuration, we treat this as a plateau rather than evidence of a statistically established regression.
+
+All workers still share one flash device and its controller. Additional threads may overlap parsing with reading and may keep outstanding work available, but they do not multiply the drive's total bandwidth. Concurrent reads can also interfere with otherwise sequential access. The useful concurrency level therefore depends on the drive and workload, not simply on the fact that the operation involves I/O.
+
+For a network server, different requests can be waiting for independent remote services or clients. While one request waits for a response, another may use the CPU or a different connection. Concurrency can hide these separate latency intervals before a shared resource becomes saturated. A single USB drive presents a much more direct shared-throughput limit. The lecture's general lesson remains valid, but it does not guarantee linear speed-up for concurrent reads from one physical device.
+
+Peak RSS also increases when several complete input buffers are live together. Each file is about 44 MiB. Garbage collection may retain arrays from previously processed files until a collection occurs, so peak memory is not guaranteed to be exactly one file size per worker. The measured RSS includes those arrays, runtime memory, thread resources, and allocation history.

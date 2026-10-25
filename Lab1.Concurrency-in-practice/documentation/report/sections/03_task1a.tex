@@ -1,0 +1,44 @@
+\chapter{Task 1a: partitioning one file among threads}
+\section{Implementation and boundary ownership}
+We create \(p\) OS threads for \(p\in\{1,2,4,8,16,32,64\}\). Each thread opens the same file independently and receives a nominal byte interval
+\begin{equation}
+a_i=\left\lfloor\frac{Li}{p}\right\rfloor,\qquad
+b_i=\left\lfloor\frac{L(i+1)}{p}\right\rfloor,
+\end{equation}
+where \(L\) is the file size in bytes. No single reader loads the whole input first. Each worker uses its own 64 KiB byte buffer and parses integers directly, without allocating a string for every line.
+
+A byte boundary can fall inside an integer. We assign a complete line to the worker whose nominal interval contains the first byte of that line. A worker that starts inside a line skips the remaining bytes of that line. The previous worker is allowed to finish a line that extends beyond its nominal end. This ownership rule prevents both skipping and double counting.
+
+\section{Source code: worker creation, boundaries, and counting}
+We include byte-identical snapshots of the submitted task sources, with their original line numbers. Keeping these snapshots inside the LaTeX project allows both a local TeX installation and the editor preview to compile the listings; the supplied synchronisation script verifies their hashes. The first listing creates each worker with its own captured index, computes the byte interval using 64-bit arithmetic, stores any exception in the corresponding error slot, and joins all workers before reading results.
+
+\sourcecode{TaskOneA.cs}{35}{66}{Task 1a: creating workers for separate byte intervals and waiting for completion.}
+
+The complete \texttt{CountPart} method below opens an independent stream for a worker and performs the boundary adjustment. Both possible paths call the same range-counting routine, so a worker whose boundary falls inside a line cannot accidentally bypass the counting logic.
+
+\sourcecode{TaskOneA.cs}{93}{126}{Task 1a: the complete per-worker file-opening and boundary-handling method.}
+
+The counting loop asks \texttt{ReadNumber} for a complete integer only while its current position is inside the nominal interval. The parser advances the shared position reference through the whole current line, including a possible crossing of the nominal end. Each output reference belongs to one worker's counter slot.
+
+\sourcecode{TaskOneA.cs}{128}{153}{Task 1a: classifying complete numbers while their lines belong to the worker.}
+
+
+The outer counting loop starts another number only while \texttt{position < end}; the integer parser consumes the complete current line. A boundary immediately after a newline needs no adjustment. A boundary on a newline is skipped by the later worker, because the earlier worker owns the line ending there. We join every worker before reading its counters. Worker exceptions are recorded separately and cause the command to fail rather than return a partially successful result.
+
+\section{Measured results}
+\input{data/task1a_table}
+\resultfigure{task1a.pdf}{Task 1a: elapsed time, speed-up relative to one thread, and peak resident memory. Solid curves are the 16:42 session; dashed curves are the 15:43 repeatability check.}{fig:task1a}
+
+The primary one-thread time is 3876 ms. It decreases to 1505 ms with eight threads, a speed-up of approximately 2.58. The lowest recorded primary time is 1277 ms at 64 threads, approximately 3.04 times faster than one thread. This remains far below ideal linear scaling. In the earlier session, eight threads were fastest at 1475 ms, while 64 threads took 1600 ms. We therefore observe a broad diminishing-returns region rather than a reproducible sharp optimum at one exact thread count.
+
+\section{Answers concerning scaling and memory}
+\question{1}{At which thread count does speed-up stop growing, and how does this relate to the CPU?}
+The major improvement occurs between one and eight threads, matching the machine's eight logical processors, of which four are performance cores. Beyond roughly 8--16 threads, improvements become much smaller and are inconsistent between sessions. In the primary session, 16, 32, and 64 threads take 1332, 1353, and 1277 ms respectively. The last value is the minimum observed, but the earlier session peaks at eight threads. We cannot honestly claim that the speed-up always stops exactly at eight. We can conclude that adding many more software threads than the eight hardware execution contexts does not provide proportional extra capacity.
+
+\question{2}{Why do 32 and 64 threads not provide large gains? Are they slower?}
+They cannot create additional CPU cores. Extra runnable threads add scheduling and context-switching work, compete for caches and memory bandwidth, and can increase file-access and runtime overhead. Reading and parsing also share resources that do not scale with thread count. The serial portions and these overheads limit the benefit of more workers.
+
+The measurements do not support the stronger statement that 32 and 64 threads are always slower. Both are slower than eight threads in the earlier session; 64 is faster than eight in the primary session. Smaller chunks, overlapping waits, and different scheduling/cache conditions may contribute, but identifying the cause would require profiling. We report this variation instead of forcing the observations to match an expected curve.
+
+\question{3}{Does peak memory depend on the number of threads? Why?}
+Yes, but the increase is modest here: the primary peak rises from approximately 34.28 MiB at one thread to 38.53 MiB at 64. Every worker adds a buffer, counter/error slots, runtime bookkeeping, and a stack with some resident pages. The explicit buffers alone occupy \(p\times64\) KiB, about 4 MiB at 64 workers. Reserved stack space is not the same as resident memory, so we do not multiply a nominal stack reservation by the thread count and equate it with RSS. This streaming implementation never needs to keep the full 352 MiB text file or 191 MiB integer payload resident in application buffers.

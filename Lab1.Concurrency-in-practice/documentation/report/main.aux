@@ -1,0 +1,130 @@
+\relax 
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\providecommand*\new@tpo@label[2]{}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\babel@aux{english}{}
+\citation{lab}
+\citation{apple}
+\@writefile{toc}{\contentsline {chapter}{\numberline {1}Introduction and experimental platform}{1}{chapter.1}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {1.1}Purpose of the laboratory work}{1}{section.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Hardware and software}{1}{section.1.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1.1}{\ignorespaces Experimental environment, recorded on 25 October 2026.}}{1}{table.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:hardware}{{1.1}{1}{Experimental environment, recorded on 25 October 2026}{table.caption.1}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {2}Software architecture and UML models}{2}{chapter.2}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}Responsibilities and process boundaries}{2}{section.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2.1}{\ignorespaces Architecture of the implemented laboratory application.}}{2}{table.caption.2}\protected@file@percent }
+\newlabel{tab:architecture}{{2.1}{2}{Architecture of the implemented laboratory application}{table.caption.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}UML class diagram: coordination and metrics}{3}{section.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces UML class diagram of the controller and metric collectors. Selected members are shown; parameter lists are shortened where marked by dots. A plus sign denotes public access and a minus sign denotes private access. Underlined operations are static.}}{4}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:umlclasses}{{2.1}{4}{UML class diagram of the controller and metric collectors. Selected members are shown; parameter lists are shortened where marked by dots. A plus sign denotes public access and a minus sign denotes private access. Underlined operations are static}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}UML sequence diagram: measure first, visualise later}{5}{section.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.2}{\ignorespaces UML sequence diagram for a measured Task 1a run followed by option \texttt  {d}. The export step represents all four collectors; the browser itself is outside the displayed participants.}}{5}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:umlsequence}{{2.2}{5}{UML sequence diagram for a measured Task 1a run followed by option \texttt {d}. The export step represents all four collectors; the browser itself is outside the displayed participants}{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}How the architecture affects the experiment}{6}{section.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}Input data, correctness, and measurement method}{6}{chapter.3}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Generating and checking the dataset}{6}{section.3.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3.1.1}{\ignorespaces Generating the same ordered data for the main file and the eight parts.}}{7}{lstlisting.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}What exactly we measure}{7}{section.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Speed-up and interpretation}{8}{section.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Task 1a: partitioning one file among threads}{9}{chapter.4}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Implementation and boundary ownership}{9}{section.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Source code: worker creation, boundaries, and counting}{9}{section.4.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.2.1}{\ignorespaces Task 1a: creating workers for separate byte intervals and waiting for completion.}}{10}{lstlisting.4.2.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.2.2}{\ignorespaces Task 1a: the complete per-worker file-opening and boundary-handling method.}}{11}{lstlisting.4.2.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.2.3}{\ignorespaces Task 1a: classifying complete numbers while their lines belong to the worker.}}{12}{lstlisting.4.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Measured results}{12}{section.4.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Task 1a: primary session at 16:42.}}{12}{table.caption.5}\protected@file@percent }
+\newlabel{tab:task1a}{{4.1}{12}{Task 1a: primary session at 16:42}{table.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Task 1a: elapsed time, speed-up relative to one thread, and peak resident memory. Solid curves are the 16:42 session; dashed curves are the 15:43 repeatability check.}}{13}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:task1a}{{4.1}{13}{Task 1a: elapsed time, speed-up relative to one thread, and peak resident memory. Solid curves are the 16:42 session; dashed curves are the 15:43 repeatability check}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Answers concerning scaling and memory}{13}{section.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Task 1b: shared counters, locking, and local counters}{14}{chapter.5}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Three implementations of the same counting operation}{14}{section.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}Source code: all three counting methods}{14}{section.5.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.2.1}{\ignorespaces Task 1b, version 1: unsynchronised shared counters.}}{14}{lstlisting.5.2.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.2.2}{\ignorespaces Task 1b, version 2: one shared lock around each classification and increment.}}{15}{lstlisting.5.2.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.2.3}{\ignorespaces Task 1b, version 3: worker-local counting followed by reduction.}}{15}{lstlisting.5.2.3}\protected@file@percent }
+\citation{lock}
+\citation{join}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5.2.4}{\ignorespaces Task 1b: shared worker-launching helper and disjoint array index ranges.}}{16}{lstlisting.5.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Measurements and correctness}{17}{section.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces Supplementary Task 1b: eight threads, with file loading excluded from counting time.}}{17}{table.caption.7}\protected@file@percent }
+\newlabel{tab:task1b}{{5.1}{17}{Supplementary Task 1b: eight threads, with file loading excluded from counting time}{table.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Task 1b at eight threads: counting time and retained totals. All three unsynchronised repetitions are shown. A fast but incorrect count is marked as incorrect.}}{17}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:task1bversions}{{5.1}{17}{Task 1b at eight threads: counting time and retained totals. All three unsynchronised repetitions are shown. A fast but incorrect count is marked as incorrect}{figure.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces Supplementary Task 1b measurements at one and eight threads. Each speed-up uses the same version's one-thread baseline. Memory is whole-process peak RSS, including array loading. The unsynchronised eight-thread timing is the mean of three incorrect runs.}}{17}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:task1bscaling}{{5.2}{17}{Supplementary Task 1b measurements at one and eight threads. Each speed-up uses the same version's one-thread baseline. Memory is whole-process peak RSS, including array loading. The unsynchronised eight-thread timing is the mean of three incorrect runs}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}How an update is lost}{18}{section.5.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces A possible interleaving of two increments of the same counter.}}{18}{table.caption.10}\protected@file@percent }
+\newlabel{tab:race}{{5.2}{18}{A possible interleaving of two increments of the same counter}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Task 1c: a producer and consumers}{19}{chapter.6}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Pipeline, batching, and termination}{19}{section.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Source code: queue lifecycle and both pipeline stages}{19}{section.6.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6.2.1}{\ignorespaces Task 1c: queue construction, producer error handling, and guaranteed completion signalling.}}{19}{lstlisting.6.2.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6.2.2}{\ignorespaces Task 1c: reading lines, publishing full batches, and handling the final partial batch.}}{20}{lstlisting.6.2.2}\protected@file@percent }
+\citation{blocking}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6.2.3}{\ignorespaces Task 1c: the complete consumer parsing and counting loop.}}{21}{lstlisting.6.2.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6.2.4}{\ignorespaces Task 1c: starting the pipeline and joining both producer and consumers.}}{21}{lstlisting.6.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Task 1c separates the sequential line reader from parallel integer parsing. The queue bounds waiting batches; additional batches can also be held by the producer and active workers.}}{22}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:pipeline}{{6.1}{22}{Task 1c separates the sequential line reader from parallel integer parsing. The queue bounds waiting batches; additional batches can also be held by the producer and active workers}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Measured results and comparison}{22}{section.6.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Task 1c: primary session at 16:42. The consumer count excludes the dedicated reader.}}{22}{table.caption.12}\protected@file@percent }
+\newlabel{tab:task1c}{{6.1}{22}{Task 1c: primary session at 16:42. The consumer count excludes the dedicated reader}{table.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces Task 1c: time, speed-up relative to one worker, and peak resident memory in the two real saved sessions. The horizontal reference in the speed-up panel represents the one-worker time.}}{23}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:task1c}{{6.2}{23}{Task 1c: time, speed-up relative to one worker, and peak resident memory in the two real saved sessions. The horizontal reference in the speed-up panel represents the one-worker time}{figure.caption.13}{}}
+\citation{readallbytes}
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Task 2: eight files on the USB flash drive}{24}{chapter.7}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}Implementation and cold-cache procedure}{24}{section.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.2}Source code: file assignment, buffering, and parsing}{24}{section.7.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7.2.1}{\ignorespaces Task 2: balanced file assignment, worker startup, and completion.}}{25}{lstlisting.7.2.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7.2.2}{\ignorespaces Task 2: whole-file byte-buffer reading for each assigned file.}}{25}{lstlisting.7.2.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7.2.3}{\ignorespaces Task 2: actual sign parsing, checked digit accumulation, and classification inside CountNumbers.}}{26}{lstlisting.7.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.3}Measured results}{27}{section.7.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Task 2: separate physical USB reconnect before every run; Spotlight disabled.}}{27}{table.caption.14}\protected@file@percent }
+\newlabel{tab:task2}{{7.1}{27}{Task 2: separate physical USB reconnect before every run; Spotlight disabled}{table.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7.1}{\ignorespaces Task 2: actual USB reads after a separate physical reconnect for every configuration. Speed-up uses the cold one-thread USB time. Peak memory includes complete-file byte buffers and runtime allocations.}}{27}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:task2}{{7.1}{27}{Task 2: actual USB reads after a separate physical reconnect for every configuration. Speed-up uses the cold one-thread USB time. Peak memory includes complete-file byte buffers and runtime allocations}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.4}Answers about storage and concurrency}{27}{section.7.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {8}Answers to all control questions}{29}{chapter.8}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {chapter}{\numberline {9}Build, run, and inspect the implementation}{31}{chapter.9}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {9.1}Source organisation and command-line entry point}{31}{section.9.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9.1.1}{\ignorespaces Preparing the file-based executables.}}{31}{lstlisting.9.1.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9.1.2}{\ignorespaces Examples for all four tasks.}}{31}{lstlisting.9.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9.2}Measuring a processing command on macOS}{32}{section.9.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9.2.1}{\ignorespaces An example of whole-process timing and peak-memory capture.}}{32}{lstlisting.9.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9.3}USB preparation and access}{32}{section.9.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9.3.1}{\ignorespaces Checking and preparing the USB volume.}}{32}{lstlisting.9.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9.4}Dashboard and evidence}{32}{section.9.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {10}Conclusions}{33}{chapter.10}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\bibcite{lab}{1}
+\bibcite{apple}{2}
+\bibcite{blocking}{3}
+\bibcite{lock}{4}
+\bibcite{join}{5}
+\bibcite{readallbytes}{6}
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{34}{section*.16}\protected@file@percent }
+\gdef \@abspage@last{36}
