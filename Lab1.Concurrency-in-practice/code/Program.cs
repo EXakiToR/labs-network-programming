@@ -1,5 +1,56 @@
+#:include TaskOneB.cs
+
 using System;
 using System.Diagnostics;
+
+
+
+
+public record MetricTaskOneB(
+    string Version,
+    int Run,
+    int Workers,
+    long ElapsedMs,
+    long Negative,
+    long Positive,
+    long Zero
+);
+
+public class MetricCollectorTaskOneB
+{
+    private readonly List<MetricTaskOneB> _metrics = new();
+
+    public void Measure(
+        string version,
+        int run,
+        int[] numbers,
+        int workers,
+        Func<int[], int, SignCounts> algorithm)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        SignCounts counts = algorithm(numbers, workers);
+
+        stopwatch.Stop();
+
+        _metrics.Add(new MetricTaskOneB(
+            version,
+            run,
+            workers,
+            stopwatch.ElapsedMilliseconds,
+            counts.Negative,
+            counts.Positive,
+            counts.Zero
+        ));
+    }
+
+    public List<MetricTaskOneB> ExportMetrics()
+    {
+        return _metrics;
+    }
+}
+
+
 
 public record MetricTaskOneA(
     int Threads,
@@ -143,10 +194,22 @@ public class Application
     private readonly MetriccolelctorTaskOneA _metricCollectorTaskOneA;
     private readonly MetriccolelctorTaskOneC _metricCollectorTaskOneC;
 
-    public Application(MetriccolelctorTaskOneA metricCollectorTaskOneA, MetriccolelctorTaskOneC metricCollectorTaskOneC)
+    private readonly MetricCollectorTaskOneB _metricCollectorTaskOneB;
+    private int[]? _taskOneBNumbers;
+
+    public Application(MetriccolelctorTaskOneA metricCollectorTaskOneA, MetriccolelctorTaskOneC metricCollectorTaskOneC, MetricCollectorTaskOneB metricCollectorTaskOneB)
     {
         _metricCollectorTaskOneA = metricCollectorTaskOneA;
         _metricCollectorTaskOneC = metricCollectorTaskOneC;
+        _metricCollectorTaskOneB = metricCollectorTaskOneB;
+    }
+
+    private int[] GetTaskOneBNumbers()
+    {
+        return _taskOneBNumbers ??=
+            File.ReadLines("numbers.txt")
+                .Select(int.Parse)
+                .ToArray();
     }
 
     // use cases
@@ -253,9 +316,59 @@ public class Application
     public void TaskOneBUseCase()
     {
         Console.WriteLine("Running Task 1B...");
-
+        TaskOneBUnsynchronizedUseCase();
+        TaskOneBLockedUseCase();
+        TaskOneBLocalCountersUseCase();
         Console.WriteLine("Task 1B Finished.");
     }
+
+
+    public void TaskOneBUnsynchronizedUseCase()
+    {
+        int[] numbers = GetTaskOneBNumbers();
+        int workers = Environment.ProcessorCount;
+
+        for (int run = 1; run <= 3; run++)
+        {
+            _metricCollectorTaskOneB.Measure(
+                "Unsynchronized",
+                run,
+                numbers,
+                workers,
+                TaskOneB.CountUnsynchronized
+            );
+        }
+    }
+
+    public void TaskOneBLockedUseCase()
+    {
+        int[] numbers = GetTaskOneBNumbers();
+        int workers = Environment.ProcessorCount;
+
+        _metricCollectorTaskOneB.Measure(
+            "Locked",
+            1,
+            numbers,
+            workers,
+            TaskOneB.CountWithLock
+        );
+    }
+
+public void TaskOneBLocalCountersUseCase()
+{
+    int[] numbers = GetTaskOneBNumbers();
+    int workers = Environment.ProcessorCount;
+
+    _metricCollectorTaskOneB.Measure(
+        "LocalCounters",
+        1,
+        numbers,
+        workers,
+        TaskOneB.CountWithLocalCounters
+    );
+}
+
+
 
     public void TaskOneCUseCase()
     {
@@ -322,11 +435,11 @@ class Program
 {
     static void Main(string[] args)
     {
-
+        var metricCollectorTaskOneB = new MetricCollectorTaskOneB();
         var matricCollectorTaskOneA = new MetriccolelctorTaskOneA();
         var matricCollectorTaskOneC = new MetriccolelctorTaskOneC();
 
-        var app = new Application(matricCollectorTaskOneA, matricCollectorTaskOneC);
+        var app = new Application(matricCollectorTaskOneA, matricCollectorTaskOneC, metricCollectorTaskOneB);
 
         while (true)
         {
@@ -369,6 +482,13 @@ class Program
 
                     Console.WriteLine("Results for TaskOneC");
                     foreach (var metric in matricCollectorTaskOneC.ExportMetrics())
+                    {
+                        Console.WriteLine(metric);
+                    }
+
+                    Console.WriteLine("Task 1B results:");
+
+                    foreach (var metric in metricCollectorTaskOneB.ExportMetrics())
                     {
                         Console.WriteLine(metric);
                     }
