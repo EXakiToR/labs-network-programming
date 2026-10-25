@@ -11,7 +11,7 @@ public record MetricTaskOneA(
 public class MetriccolelctorTaskOneA
 {
     // should measure the time and peak memory. 
-    private Stopwatch _stopwatch;
+    private Stopwatch? _stopwatch;
     //private Process _process;
     List<MetricTaskOneA> metrics = new();
     public MetriccolelctorTaskOneA()
@@ -41,21 +41,25 @@ public class MetriccolelctorTaskOneA
 
     }
 
-    public void StopCollect(int numberOfThreads, Process process)
+    public void StopCollect(Process process, int numberOfThreads)
     {
+        if (_stopwatch is null)
+            throw new ArgumentNullException();
         _stopwatch.Stop();
+        
         process.Refresh();
         long peakMemoryBytes = process.PeakWorkingSet64;
         process.Dispose();
+
 
         long elapsedMs = _stopwatch.ElapsedMilliseconds;
         //double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
         metricSave(numberOfThreads, elapsedMs, peakMemoryBytes);
     }
 
-    private void metricSave(int numberOfThreads, long elapsedMs)
+    private void metricSave(int numberOfThreads, long elapsedMs, long peakMemoryBytes)
     {
-        metrics.Add(new Metric(numberOfThreads, elapsedMs, peakMemoryBytes));
+        metrics.Add(new MetricTaskOneA(numberOfThreads, elapsedMs, peakMemoryBytes));
     }
 
     public List<MetricTaskOneA> ExportMetrics()
@@ -138,10 +142,9 @@ public class Application
         // for i in [1,2,4,8,16,32] do
         //      var process = new Process();
         //      process.StartInfo.FileName = "./MyProgram";
-
+        //      process.StartInfo.ArgumentList.Add(i);
         //      _metricCollector.Collect(i, process)  // measure the execution time and peak memory
         //      // dotnet run *** -i
-        //      process.StartInfo.ArgumentList.Add(i);
         //      process.Start();
         //      process.WaitForExit();
         //      _metricCollector.StopCollect(i, process)
@@ -187,9 +190,12 @@ class Program
     static void Main(string[] args)
     {
 
+        var matricCollector = new MetriccolelctorTaskOneA();
+
+        var app = new Application(matricCollector);
+
         while (true)
         {
-            var app = new Application();
             drawMenu();
             var option = chooseOption();
             Console.Clear();
