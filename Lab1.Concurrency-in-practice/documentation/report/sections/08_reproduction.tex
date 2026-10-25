@@ -1,0 +1,51 @@
+\chapter{Build, run, and inspect the implementation}
+\section{Source organisation and command-line entry point}
+The submitted C\# sources are in \texttt{code/}. \texttt{TaskOneA.cs}, \texttt{TaskOneB.cs}, \texttt{TaskOneC.cs}, and \texttt{TaskTwo.cs} implement the algorithms; \texttt{Program.cs} provides the interactive menu and metric collectors; \texttt{Drawer.cs} builds the browser dashboard. We provide \texttt{documentation/reproduce/lab1.sh} as one command-line entry point for selecting tasks and configurations without navigating the menu. The implementation remains organised as separate file-based C\# modules, launched by the entry point.
+
+From the laboratory directory, we build before measuring:
+\begin{lstlisting}[language=bash,caption={Preparing the file-based executables.}]
+cd Lab1.Concurrency-in-practice
+bash documentation/reproduce/lab1.sh build
+\end{lstlisting}
+
+The following examples select every task explicitly. The second argument is the number of processing threads or consumers. For Task 1b, the version and repetition label are additional arguments; loading the integer array remains outside the internal stopwatch.
+\begin{lstlisting}[language=bash,caption={Examples for all four tasks.}]
+bash documentation/reproduce/lab1.sh task1a 8
+bash documentation/reproduce/lab1.sh task1b 8 Unsynchronized 1
+bash documentation/reproduce/lab1.sh task1b 8 Unsynchronized 2
+bash documentation/reproduce/lab1.sh task1b 8 Unsynchronized 3
+bash documentation/reproduce/lab1.sh task1b 8 Locked 1
+bash documentation/reproduce/lab1.sh task1b 8 LocalCounters 1
+bash documentation/reproduce/lab1.sh task1c 2
+bash documentation/reproduce/lab1.sh task2 1 /Volumes/ESD-USB
+\end{lstlisting}
+
+For Tasks 1a and 1c, we repeat the command with 1, 2, 4, 8, 16, 32, and 64 workers. For Task 1b, eight workers satisfy the required logical-processor setting; one worker is an additional baseline used only to calculate scaling. For Task 2, we run 1, 2, and 4 separately, with a physical reconnect before each, rather than putting all configurations in an uninterrupted loop.
+
+If the existing input is absent, menu option \texttt{g} generates the main file and the eight parts. Re-generating input changes the experiment, so we keep the original files for comparison with the recorded hashes. The USB must contain the eight part files before beginning cold-cache measurements; copying and checking them belongs before the eject/reconnect sequence.
+
+\section{Measuring a processing command on macOS}
+\begin{lstlisting}[language=bash,caption={An example of whole-process timing and peak-memory capture.}]
+cd code
+/usr/bin/time -l -o task1a-8.time.txt \
+  dotnet artifacts/TaskOneA/TaskOneA.dll 8
+\end{lstlisting}
+The \texttt{real} value is wall-clock time; \texttt{user} and \texttt{sys} record CPU time. We retain the maximum resident set size and the printed sign totals. For Task 1b, we use the benchmark's internal \texttt{ELAPSED\_MS} value for counting time and the external process peak for memory. Timing a complete \texttt{dotnet run} compilation command would add build overhead and would not reproduce that counting metric.
+
+\section{USB preparation and access}
+\begin{lstlisting}[language=bash,caption={Checking and preparing the USB volume.}]
+diskutil list external physical
+ls /Volumes
+diskutil info /Volumes/ESD-USB
+mdutil -i off /Volumes/ESD-USB
+mdutil -s /Volumes/ESD-USB
+cd ~
+diskutil eject /Volumes/ESD-USB
+# Physically unplug and reconnect, then measure one configuration.
+\end{lstlisting}
+The absolute path begins with \texttt{/Volumes}. A terminal whose working directory is inside the USB volume can prevent safe ejection; changing to the home directory releases that reference. We do not force-unmount the drive. If the operating system requires administrative privileges for indexing control, that preparation is performed with the appropriate local authorisation before the timed experiment.
+
+\section{Dashboard and evidence}
+Launching \texttt{dotnet run --file Program.cs} from \texttt{code/} opens the original menu. After collecting metrics, option \texttt{d} passes all four metric sets to \texttt{Drawer.cs}, which generates an offline HTML report and opens it in a browser. Task 1b has individual run checkboxes. Unchecking \texttt{Locked} removes it from both graphs and recalculates their scales, making the smaller timing differences visible. The exact-value table retains every original measurement.
+
+The report uses vector plots and searchable source listings for readable results and code. We retain the original real dashboard snapshots, CSV/JSON measurements, dataset manifest, and per-run timing/output logs in \texttt{report/data/}. The accompanying scripts reproduce the figures and processing commands.

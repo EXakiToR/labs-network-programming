@@ -1,0 +1,52 @@
+\chapter{Task 1b: shared counters, locking, and local counters}
+\section{Three implementations of the same counting operation}
+We load the dataset into an integer array before timing, then use eight threads because the runtime reports eight logical processors. The array is read-only during counting, so reading it concurrently does not require a lock. The important difference is where the mutable counters live.
+
+\section{Source code: all three counting methods}
+The following listings are the actual methods, including their returned counters. In the first version, the variables are declared outside the worker lambda and are shared captured state. Multiple workers therefore compete to update the same three values.
+
+\sourcecode{TaskOneB.cs}{10}{25}{Task 1b, version 1: unsynchronised shared counters.}
+
+The locked version creates one lock object for the complete invocation. Every worker captures that same object; creating a different lock per worker would not protect shared counters. The classification and counter update are both inside the protected block.
+
+\sourcecode{TaskOneB.cs}{28}{47}{Task 1b, version 2: one shared lock around each classification and increment.}
+
+In the local-counter version, the three variables are declared inside the worker lambda. Only the owning worker changes them. After the helper has joined all threads, the calling thread reduces the result records into one final answer.
+
+\sourcecode{TaskOneB.cs}{50}{78}{Task 1b, version 3: worker-local counting followed by reduction.}
+
+All three methods share the same partitioning mechanism. Its two-argument callback overload delegates to the worker-ID overload shown below. The helper divides the array into half-open index intervals, captures each worker's index, starts the OS threads, and joins them. Consequently, the experimental difference is the counter-update strategy rather than a different partitioning or input-loading scheme.
+
+\sourcecode{TaskOneB.cs}{80}{107}{Task 1b: shared worker-launching helper and disjoint array index ranges.}
+
+
+The unsynchronised version updates shared captured variables. The locked version uses the same lock object for all workers and acquires it for every number. The local-counter version updates variables owned by one worker, writes one result record per worker, and adds those records after all workers have joined. The \texttt{lock} statement guarantees mutual exclusion for the protected block~\cite{lock}; \texttt{Thread.Join} waits for worker termination before the final aggregation~\cite{join}.
+
+\section{Measurements and correctness}
+\input{data/task1b_table}
+\resultfigure{task1b_versions.pdf}{Task 1b at eight threads: counting time and retained totals. All three unsynchronised repetitions are shown. A fast but incorrect count is marked as incorrect.}{fig:task1bversions}
+\resultfigure{task1b_scaling.pdf}{Supplementary Task 1b measurements at one and eight threads. Each speed-up uses the same version's one-thread baseline. Memory is whole-process peak RSS, including array loading. The unsynchronised eight-thread timing is the mean of three incorrect runs.}{fig:task1bscaling}
+
+\question{4}{Rank the versions by time. Which are correct? Explain each result.}
+In the supplementary eight-thread experiment, local counters are fastest at 131.284 ms. The three unsynchronised repetitions take 306.201, 261.485, and 268.229 ms. The locked version is slowest at 1738.592 ms. Thus the observed order is local counters, unsynchronised shared counters, then locked shared counters. The earlier application snapshot gives the same ordering, although its absolute times differ.
+
+Local counters and locking both return the reference totals. The unsynchronised repetitions count only 12\,929\,759, 14\,082\,158, and 12\,389\,943 numbers. They lose approximately 72--75\% of the updates. Their different totals on identical input demonstrate a race condition. The fact that all three retain the 30 zero values does not make the algorithm correct: zero updates are rare and happened not to collide in these runs.
+
+Local counters avoid contention in the hot loop and perform only a small final reduction. Shared counters also cause cache-coherence traffic when cores compete to update the same memory locations, even if no lock is used. A lock makes the update safe but serialises this very small unit of work and repeatedly pays the cost of acquiring and releasing the lock. In this experiment the correct local-counter version is approximately 13.24 times faster than the locked version at eight threads.
+
+The one-thread supplementary measurements make this distinction clearer: local counters take 475.585 ms at one thread and 131.284 ms at eight, giving approximately 3.62 times speed-up. Locking takes 1002.649 ms at one thread and 1738.592 ms at eight, so adding threads slows this version down. A one-thread unsynchronised execution is correct because there is no competing writer; that does not establish correctness once multiple writers are introduced.
+
+\section{How an update is lost}
+\begin{table}[H]\centering\small
+\caption{A possible interleaving of two increments of the same counter.}\label{tab:race}
+\begin{tabularx}{\textwidth}{@{}cXXc@{}}\toprule
+Step & Worker A & Worker B & Shared value\\\midrule
+1 & Reads 100 & & 100\\
+2 & & Reads 100 & 100\\
+3 & Computes 101 & & 100\\
+4 & & Computes 101 & 100\\
+5 & Writes 101 & & 101\\
+6 & & Writes 101 & 101\\\bottomrule
+\end{tabularx}
+\end{table}
+Two numbers were processed, but the counter increased only once. The increment is a read--modify--write operation; using a 64-bit counter does not make the whole operation atomic. A lock prevents this interleaving, while thread-local counters remove the competing writes. An atomic increment could also preserve updates, but would still make all workers contend for shared counters and is outside the three required variants.

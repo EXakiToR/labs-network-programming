@@ -1,0 +1,30 @@
+\chapter{Introduction and experimental platform}
+\section{Purpose of the laboratory work}
+In this laboratory work, we investigate how the number of operating-system threads and the way we distribute work affect execution time, correctness, and memory consumption. We process the same 50 million integers throughout the experiments. This gives us a common workload for comparing direct file partitioning, shared counters, per-thread counters, a producer--consumer queue, and reading complete files from removable storage.
+
+Our aim is to explain the measurements rather than assume that more threads must make a program faster. We distinguish concurrency, which lets several activities make progress, from parallel execution, which requires available processing resources. We also distinguish a short execution time from a correct result: an implementation that loses most of its updates is not a successful optimisation.
+
+The laboratory handout defines Tasks 1a, 1b, 1c, and 2, together with eight task questions and six control questions~\cite{lab}. We answer all of them explicitly below. We include actual measurements, normalised speed-up, peak resident memory, selected source excerpts, and instructions for reproduction. The artificial values used during earlier dashboard testing are excluded from every experimental chart and table in this report.
+
+\section{Hardware and software}
+\begin{table}[H]\centering\small
+\caption{Experimental environment, recorded on 25 October 2026.}\label{tab:hardware}
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}X@{}}\toprule
+Component & Recorded configuration\\\midrule
+Computer & MacBook Air, model identifier Mac15,13; Apple M3\\
+Physical CPU cores & 8: four performance cores and four efficiency cores\\
+Logical processors & 8, confirmed by macOS and \texttt{Environment.ProcessorCount}\\
+Memory & 16 GB unified memory\\
+Internal storage & APPLE SSD AP0512Z, approximately 500.28 GB, NVMe; APFS\\
+USB flash drive & Wilk ``USB DISK 3.0'', controller vendor Phison; volume \texttt{ESD-USB}, approximately 7.93 GB\\
+USB connection & SuperSpeed USB 3.0 device through a GenesysLogic USB 3.1 hub; the negotiated SuperSpeed connection is not a measured transfer rate\\
+USB filesystem & MS-DOS FAT32; mounted at \texttt{/Volumes/ESD-USB}\\
+Operating system & macOS 14.7, build 23H124, ARM64\\
+Language/runtime & C\#, .NET SDK 10.0.400; .NET runtime 10.0.11\\
+Threading & Explicit \texttt{System.Threading.Thread} workers; bounded \texttt{BlockingCollection} in Task 1c\\\bottomrule
+\end{tabularx}
+\end{table}
+
+The M3 contains two types of physical core. An efficiency core is still a real core, but we should not expect it to process this workload at the same rate as a performance core. The machine exposes one logical processor per physical core, so eight logical processors do not mean sixteen hardware execution contexts. Apple's technical specification confirms the four-plus-four CPU configuration~\cite{apple}.
+
+We recorded the USB model, capacity, filesystem, and negotiated connection using macOS device information. We did not infer the flash drive's performance from the words ``USB 3.0'': the flash controller, NAND memory, hub, and access pattern can all limit the measured application throughput.

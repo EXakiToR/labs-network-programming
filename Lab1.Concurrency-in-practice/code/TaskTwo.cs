@@ -17,7 +17,8 @@ class Program
             return 1;
         }
 
-        string directory = args.Length == 2 ? args[1] : Directory.GetCurrentDirectory();
+        string directory = args.Length == 2 ? args[1] : "/Volumes/ESD-USB";
+
         if (!Directory.Exists(directory))
         {
             Console.Error.WriteLine($"Error: Directory '{directory}' was not found.");

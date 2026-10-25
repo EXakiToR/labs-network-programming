@@ -1,0 +1,43 @@
+\chapter{Task 1c: a producer and consumers}
+\section{Pipeline, batching, and termination}
+We use one dedicated reader and \(p\) worker threads. The reader opens \texttt{numbers.txt}, reads lines, and groups them into batches of 10\,000 strings. A bounded \texttt{BlockingCollection<List<string>>} holds at most 100 batches. Workers repeatedly remove a batch, parse its integers, and update local counters.
+
+\section{Source code: queue lifecycle and both pipeline stages}
+The setup below creates the bounded queue and shared cancellation source. The producer signals completion in a \texttt{finally} block, so consumers are not left waiting indefinitely if reading fails. An error is also retained for reporting; cancellation releases blocked queue operations.
+
+\sourcecode{TaskOneC.cs}{30}{57}{Task 1c: queue construction, producer error handling, and guaranteed completion signalling.}
+
+The complete producer method forms batches of \texttt{BatchSize = 10000} lines. The queue capacity is \texttt{QueueCapacity = 100} batches. Publishing a full batch transfers its list to consumers; the producer then allocates a new list, so it does not keep appending to a list already being processed elsewhere.
+
+\sourcecode{TaskOneC.cs}{128}{153}{Task 1c: reading lines, publishing full batches, and handling the final partial batch.}
+
+The complete consumer method removes batches through consuming enumeration, validates every integer, and updates its own output slots. It naturally finishes when no more batches can arrive and the queue has been drained. The enclosing worker catches errors and requests shared cancellation, following the same failure policy as the producer.
+
+\sourcecode{TaskOneC.cs}{155}{189}{Task 1c: the complete consumer parsing and counting loop.}
+
+Once all participants have been constructed, we start the reader and consumers, join the reader, and then join every consumer. Waiting for the producer alone would be insufficient because queued batches could still be in progress.
+
+\sourcecode{TaskOneC.cs}{85}{95}{Task 1c: starting the pipeline and joining both producer and consumers.}
+
+
+This queue provides both thread-safe transfer and backpressure: an empty queue makes consumers wait, and a full queue makes the producer wait~\cite{blocking}. There is no busy loop checking for available work. Completion is different from cancellation: on normal completion, queued batches are still processed; on an error, the shared cancellation token releases blocked operations so that the program can report failure rather than deadlock. The producer also publishes the final partial batch if the input size is not a multiple of 10\,000.
+
+\resultfigure{pipeline.pdf}{Task 1c separates the sequential line reader from parallel integer parsing. The queue bounds waiting batches; additional batches can also be held by the producer and active workers.}{fig:pipeline}
+
+\section{Measured results and comparison}
+\input{data/task1c_table}
+\resultfigure{task1c.pdf}{Task 1c: time, speed-up relative to one worker, and peak resident memory in the two real saved sessions. The horizontal reference in the speed-up panel represents the one-worker time.}{fig:task1c}
+
+\question{5}{How does Task 1c compare with Task 1a, and when does it stop getting faster?}
+In the primary session, Task 1c takes 1952 ms with one worker, versus 3876 ms for Task 1a with one thread. Task 1c includes a separate producer, so ``one worker'' already means two active processing threads, in addition to the coordinating main thread. This is not a comparison of two single-threaded programs. Overlapping reading/line extraction with parsing can help, and the implementations also use different parsing and buffering paths.
+
+Task 1c reaches its best primary time at two workers: 1853 ms, only about 1.05 times faster than its one-worker configuration. At four workers Task 1a is already faster: 1834 ms versus 1984 ms. With eight workers the gap grows to 1505 ms versus 2248 ms. Task 1c reaches 3413 ms at 64 workers, slower than its own one-worker configuration.
+
+The sequential producer must read every line and allocate strings. Every batch also crosses a synchronised queue. Additional consumers cannot accelerate the producer and eventually add contention, scheduling work, and allocation/garbage-collection pressure. Task 1a instead lets workers read independent byte ranges and parse directly into local counters. In these measurements, Task 1c stops providing a useful improvement after about 1--2 workers; the earlier session is already fastest at one worker. The best Task 1c primary configuration is not the best configuration overall.
+
+Peak memory is not monotonic: the primary session uses approximately 131.56 MiB at one worker, falls to 50.16 MiB at four, and rises to 137.05 MiB at 64. With few consumers the queue can accumulate strings; adding consumers can drain it faster. At large worker counts, active batches, thread resources, and runtime overhead grow. A bounded queue limits queued items, but does not force identical occupancy or identical RSS in every run.
+
+\question{6}{What changes with one-line batches or an unbounded queue?}
+The current dataset produces exactly 5000 batches of 10\,000 lines. One-line batches would require 50 million queue transfers, 10\,000 times as many. That increases synchronisation, wake-up, bookkeeping, and small-allocation costs relative to the very cheap operation of classifying one integer. Smaller batches can improve balancing for expensive or irregular work, but a batch of one is a poor trade-off for this workload.
+
+The present queue can hold at most one million waiting lines. This is not the total number of live lines: the producer may be building a batch, and each worker may hold another batch. With an unbounded queue, a fast producer can run far ahead and retain a large fraction of the 50 million strings, consuming far more memory than their compact integer representation. Garbage collection, memory pressure, and possibly swapping can then reduce throughput. Bounding the queue makes the producer wait and keeps the amount of queued work under control; it does not by itself remove all other sources of memory growth.
