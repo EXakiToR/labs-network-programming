@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+data/
+Results/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -361,3 +364,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+#datasets
+numbers.txt
+numbers1.txt
+numbers2.txt
+numbers3.txt
+numbers4.txt
+numbers5.txt
+numbers6.txt
+numbers7.txt
+numbers8.txt
