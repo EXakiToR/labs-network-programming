@@ -7,11 +7,19 @@ public record MetricTaskOneA(
     long peakMemoryBytes
 );
 
+public record MetricTaskOneC(
+    int Workers,
+    long ElapsedMs,
+    long peakMemoryBytes
+);
+
 
 public class MetriccolelctorTaskOneA
 {
     // should measure the time and peak memory. 
     private Stopwatch? _stopwatch;
+    private long _peakMemoryBytes;
+
     //private Process _process;
     List<MetricTaskOneA> metrics = new();
     public MetriccolelctorTaskOneA()
@@ -22,38 +30,17 @@ public class MetriccolelctorTaskOneA
     public void Collect(Process process, int numberOfThreads)
     {
         _stopwatch = Stopwatch.StartNew();
-        
-        // and for peak memory we need to start process .. here
-        // var process = Process.Start("./MyProgram")!;
-        // so, we will pass here as a parameter that started process. 
-
-        // var process = new Process();
-        // process.StartInfo.FileName = "./MyProgram";
-
-        // ... другой код ...
-
-        // Запуск
-        // process.Start();
-
-        // initialize before, transmit here, start there
-
-
-
+        _peakMemoryBytes = 0;
     }
-
-    public void StopCollect(Process process, int numberOfThreads)
+    public void StopCollect(int numberOfThreads, long peakMemoryBytes)
     {
         if (_stopwatch is null)
-            throw new ArgumentNullException();
-        _stopwatch.Stop();
-        
-        process.Refresh();
-        long peakMemoryBytes = process.PeakWorkingSet64;
-        process.Dispose();
+            throw new InvalidOperationException();
 
+        _stopwatch.Stop();
 
         long elapsedMs = _stopwatch.ElapsedMilliseconds;
-        //double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+
         metricSave(numberOfThreads, elapsedMs, peakMemoryBytes);
     }
 
@@ -67,14 +54,99 @@ public class MetriccolelctorTaskOneA
         return metrics;
     }
 
+    public void TrackMemoryUntilExit(Process process)
+    {
+        while (!process.WaitForExit(5))
+        {
+            try
+            {
+                process.Refresh();
+
+                _peakMemoryBytes = Math.Max(
+                    _peakMemoryBytes,
+                    process.PeakWorkingSet64
+                );
+            }
+            catch (InvalidOperationException)
+            {
+                break; // Process has already exited
+            }
+        }
+    }
+
+}
+
+public class MetriccolelctorTaskOneC
+{
+    // should measure the time and peak memory. 
+    private Stopwatch? _stopwatch;
+    private long _peakMemoryBytes;
+
+    //private Process _process;
+    List<MetricTaskOneA> metrics = new();
+    public MetriccolelctorTaskOneC()
+    {
+
+    }
+
+    public void Collect(Process process, int numberOfThreads)
+    {
+        _stopwatch = Stopwatch.StartNew();
+        _peakMemoryBytes = 0;
+    }
+    public void StopCollect(int numberOfThreads, long peakMemoryBytes)
+    {
+        if (_stopwatch is null)
+            throw new InvalidOperationException();
+
+        _stopwatch.Stop();
+
+        long elapsedMs = _stopwatch.ElapsedMilliseconds;
+
+        metricSave(numberOfThreads, elapsedMs, peakMemoryBytes);
+    }
+
+    private void metricSave(int numberOfThreads, long elapsedMs, long peakMemoryBytes)
+    {
+        metrics.Add(new MetricTaskOneA(numberOfThreads, elapsedMs, peakMemoryBytes));
+    }
+
+    public List<MetricTaskOneA> ExportMetrics()
+    {
+        return metrics;
+    }
+
+    public void TrackMemoryUntilExit(Process process)
+    {
+        while (!process.WaitForExit(5))
+        {
+            try
+            {
+                process.Refresh();
+
+                _peakMemoryBytes = Math.Max(
+                    _peakMemoryBytes,
+                    process.PeakWorkingSet64
+                );
+            }
+            catch (InvalidOperationException)
+            {
+                break; // Process has already exited
+            }
+        }
+    }
+
 }
 
 public class Application
 {
-    private MetriccolelctorTaskOneA _metricCollector;
-    public Application(MetriccolelctorTaskOneA metriccolelctor)
+    private readonly MetriccolelctorTaskOneA _metricCollectorTaskOneA;
+    private readonly MetriccolelctorTaskOneC _metricCollectorTaskOneC;
+
+    public Application(MetriccolelctorTaskOneA metricCollectorTaskOneA, MetriccolelctorTaskOneC metricCollectorTaskOneC)
     {
-        _metricCollector = metriccolelctor;
+        _metricCollectorTaskOneA = metricCollectorTaskOneA;
+        _metricCollectorTaskOneC = metricCollectorTaskOneC;
     }
 
     // use cases
@@ -129,35 +201,51 @@ public class Application
     public void TaskOneAUseCase()
     {
         Console.WriteLine("Running Task 1A...");
-        // here use metric collector and run separate compiled C# program. With 1,2,4,8,16,32,64 threads. 
-        // dotnet run *** --5 (number of threads), and in cycle here, that compilable program works only with.. for example 30 threads.
 
-        // inject metric collector. Ask user number of threads. Call infrastructure class, inject the aka repo. 
+        foreach (int threads in new[] { 1, 2, 4, 8, 16, 32, 64 })
+        {
+            string reportPath = Path.GetTempFileName();
 
-        // In general, we need 1. One thread, 2. in cycle with many threads. 
-        // Keep It simple, according to task from lab, we need only the cycle. So, no ask to user.
-        // Use collector. Inject collector. 
+            try
+            {
+                using var process = new Process();
 
+                process.StartInfo.FileName = "/usr/bin/time";
+                process.StartInfo.ArgumentList.Add("-l");
+                process.StartInfo.ArgumentList.Add("-o");
+                process.StartInfo.ArgumentList.Add(reportPath);
 
-        // for i in [1,2,4,8,16,32] do
-        //      var process = new Process();
-        //      process.StartInfo.FileName = "./MyProgram";
-        //      process.StartInfo.ArgumentList.Add(i);
-        //      _metricCollector.Collect(i, process)  // measure the execution time and peak memory
-        //      // dotnet run *** -i
-        //      process.Start();
-        //      process.WaitForExit();
-        //      _metricCollector.StopCollect(i, process)
-        // endfor
+                process.StartInfo.ArgumentList.Add("dotnet");
+                process.StartInfo.ArgumentList.Add(
+                    Path.GetFullPath("./artifacts/TaskOneA/TaskOneA.dll")
+                );
+                process.StartInfo.ArgumentList.Add(threads.ToString());
 
+                process.StartInfo.UseShellExecute = false;
 
-        // This is how to actually start process
-        // process.StartInfo.FileName = "dotnet";
-        // process.StartInfo.ArgumentList.Add("artifacts/TaskOneA"); // somehow there is no .dll
-        // process.StartInfo.ArgumentList.Add("8");
+                _metricCollectorTaskOneA.Collect(process, threads);
 
+                process.Start();
+                process.WaitForExit();
 
+                if (process.ExitCode != 0)
+                    throw new Exception("TaskOneA failed.");
 
+                string line = File.ReadLines(reportPath)
+                    .First(l => l.Contains("maximum resident set size"));
+
+                long peakMemoryBytes = long.Parse(
+                    line.Split((char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries)[0]
+                );
+
+                _metricCollectorTaskOneA.StopCollect(threads, peakMemoryBytes);
+            }
+            finally
+            {
+                File.Delete(reportPath);
+            }
+        }
 
         Console.WriteLine("Task 1A Finished.");
     }
@@ -172,6 +260,51 @@ public class Application
     public void TaskOneCUseCase()
     {
         Console.WriteLine("Running Task 1C...");
+
+        foreach (int threads in new[] { 1, 2, 4, 8, 16, 32, 64 })
+        {
+            string reportPath = Path.GetTempFileName();
+
+            try
+            {
+                using var process = new Process();
+
+                process.StartInfo.FileName = "/usr/bin/time";
+                process.StartInfo.ArgumentList.Add("-l");
+                process.StartInfo.ArgumentList.Add("-o");
+                process.StartInfo.ArgumentList.Add(reportPath);
+
+                process.StartInfo.ArgumentList.Add("dotnet");
+                process.StartInfo.ArgumentList.Add(
+                    Path.GetFullPath("./artifacts/TaskOneC/TaskOneC.dll")
+                );
+                process.StartInfo.ArgumentList.Add(threads.ToString());
+
+                process.StartInfo.UseShellExecute = false;
+
+                _metricCollectorTaskOneC.Collect(process, threads);
+
+                process.Start();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    throw new Exception("TaskOneC failed.");
+
+                string line = File.ReadLines(reportPath)
+                    .First(l => l.Contains("maximum resident set size"));
+
+                long peakMemoryBytes = long.Parse(
+                    line.Split((char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries)[0]
+                );
+
+                _metricCollectorTaskOneC.StopCollect(threads, peakMemoryBytes);
+            }
+            finally
+            {
+                File.Delete(reportPath);
+            }
+        }
 
         Console.WriteLine("Task 1C Finished.");
     }
@@ -190,9 +323,10 @@ class Program
     static void Main(string[] args)
     {
 
-        var matricCollector = new MetriccolelctorTaskOneA();
+        var matricCollectorTaskOneA = new MetriccolelctorTaskOneA();
+        var matricCollectorTaskOneC = new MetriccolelctorTaskOneC();
 
-        var app = new Application(matricCollector);
+        var app = new Application(matricCollectorTaskOneA, matricCollectorTaskOneC);
 
         while (true)
         {
@@ -226,6 +360,18 @@ class Program
 
                 case 'd':
                     Console.WriteLine("Drawing results...");
+
+                    Console.WriteLine("Results for TaskOneA");
+                    foreach (var metric in matricCollectorTaskOneA.ExportMetrics())
+                    {
+                        Console.WriteLine(metric);
+                    }
+
+                    Console.WriteLine("Results for TaskOneC");
+                    foreach (var metric in matricCollectorTaskOneC.ExportMetrics())
+                    {
+                        Console.WriteLine(metric);
+                    }
                     break;
 
                 case 'a':
