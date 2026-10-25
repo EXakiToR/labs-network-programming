@@ -114,13 +114,29 @@ class Program
 
             if (previousByte != '\n')
             {
-                SkipToNextLine(stream, ref position, fileLength);
+                using BufferedFileReader reader = new BufferedFileReader(stream);
+                SkipToNextLine(reader, ref position, fileLength);
+                CountRemainingLines(reader, ref position, end, fileLength, ref negative, ref positive, ref zero);
+                return;
             }
         }
 
+        using BufferedFileReader bufferedReader = new BufferedFileReader(stream);
+        CountRemainingLines(bufferedReader, ref position, end, fileLength, ref negative, ref positive, ref zero);
+    }
+
+    private static void CountRemainingLines(
+        BufferedFileReader reader,
+        ref long position,
+        long end,
+        long fileLength,
+        ref long negative,
+        ref long positive,
+        ref long zero)
+    {
         while (position < end)
         {
-            int value = ReadNumber(stream, ref position, fileLength);
+            int value = ReadNumber(reader, ref position, fileLength);
             if (value < 0)
             {
                 negative++;
@@ -136,11 +152,11 @@ class Program
         }
     }
 
-    private static void SkipToNextLine(FileStream stream, ref long position, long fileLength)
+    private static void SkipToNextLine(BufferedFileReader reader, ref long position, long fileLength)
     {
         while (position < fileLength)
         {
-            if (stream.ReadByte() == '\n')
+            if (reader.ReadByte() == '\n')
             {
                 position++;
                 return;
@@ -150,7 +166,7 @@ class Program
         }
     }
 
-    private static int ReadNumber(FileStream stream, ref long position, long fileLength)
+    private static int ReadNumber(BufferedFileReader reader, ref long position, long fileLength)
     {
         int sign = 1;
         long value = 0;
@@ -159,7 +175,7 @@ class Program
 
         while (position < fileLength)
         {
-            int currentByte = stream.ReadByte();
+            int currentByte = reader.ReadByte();
             position++;
 
             if (currentByte == '\n')
@@ -194,5 +210,37 @@ class Program
         }
 
         return checked((int)(sign * value));
+    }
+
+    private sealed class BufferedFileReader : IDisposable
+    {
+        private readonly FileStream _stream;
+        private readonly byte[] _buffer = new byte[64 * 1024];
+        private int _bufferPosition;
+        private int _bufferLength;
+
+        public BufferedFileReader(FileStream stream)
+        {
+            _stream = stream;
+        }
+
+        public int ReadByte()
+        {
+            if (_bufferPosition >= _bufferLength)
+            {
+                _bufferLength = _stream.Read(_buffer, 0, _buffer.Length);
+                _bufferPosition = 0;
+                if (_bufferLength == 0)
+                {
+                    return -1;
+                }
+            }
+
+            return _buffer[_bufferPosition++];
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }
