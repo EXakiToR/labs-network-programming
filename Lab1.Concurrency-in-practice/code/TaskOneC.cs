@@ -27,6 +27,8 @@ class Program
             return 1;
         }
 
+
+        //  { ["1001", "123123", "3423423"], ["1001", "123123", "3423423"] , ["1001", "123123", "3423423"] }
         using BlockingCollection<List<string>> queue = new BlockingCollection<List<string>>(QueueCapacity);
         using CancellationTokenSource cancellation = new CancellationTokenSource();
 
