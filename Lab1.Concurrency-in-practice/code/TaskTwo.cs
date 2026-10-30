@@ -17,7 +17,9 @@ class Program
             return 1;
         }
 
-        string directory = args.Length == 2 ? args[1] : "/Volumes/ESD-USB";
+        // string directory = args.Length == 2 ? args[1] : "/Volumes/ESD-USB";
+        string directory = args.Length == 2 ? args[1] : ".";
+
 
         if (!Directory.Exists(directory))
         {

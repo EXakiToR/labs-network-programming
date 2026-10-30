@@ -39,6 +39,9 @@ class Program
             long start = fileLength * workerIndex / numberOfThreads;
             long end = fileLength * (workerIndex + 1) / numberOfThreads;
 
+            // *****************************************************
+            // |      )      |
+
             workers[i] = new Thread(() =>
             {
                 try
@@ -62,7 +65,7 @@ class Program
 
         foreach (Thread worker in workers)
         {
-            worker.Join();
+            worker.Join(); // wait
         }
 
         for (int i = 0; i < errors.Length; i++)
