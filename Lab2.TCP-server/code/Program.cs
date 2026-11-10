@@ -2,36 +2,119 @@
 using System.Net.Sockets;
 using System.Text;
 using CoffeeShop.Handlers;
+using CoffeeShop.Network;
 using CoffeeShop.Requests;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 // Client can:
 // 1. Ask for the menu.
 // 2. Order
 //
 
-Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+// cancellation on ctrl+C
+HashSet<Task> clientTasks = new();
+
+using var cts = new CancellationTokenSource();
+
+using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 listener.Bind(new IPEndPoint(IPAddress.Loopback, 5050));
 listener.Listen();
 
-while (true)
+Console.CancelKeyPress += (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+
+// accept new connections.
+while (!cts.IsCancellationRequested && ServerState.Status == ServerStatus.Accepting)
 {
     // may do: create normal cancellatopn and error incapsulation.
     // not just that ugly try catch that can theoretically lead to infinite loop of errors.
+    Socket connection;
     try
     {
-        Socket connection = await listener.AcceptAsync();
-        Console.WriteLine("Connection connected.");
-        _ = TCPClientHandleAsync(connection);
+        connection = await listener.AcceptAsync(cts.Token);
+    }
+    catch (OperationCanceledException) when (cts.IsCancellationRequested)
+    {
+        // cancellation requested, exit loop.
+        Console.WriteLine("Server is shutting down, no longer accepting new connections.");
+        break;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error: {ex.Message}");
+        Console.WriteLine(
+            $"FATAL server error: {ex.Message}\n Cannot more accept new connections, shutting down server."
+        );
+        // Notify all client handlers and stop accepting connections.
+        cts.Cancel();
+        break;
     }
+
+    Task task = TCPClientHandleAsync(connection, cts.Token); // fire and keep eye on it, to handle multiple connections.
+    // exception from a single client are incapsulated inside TCPClientHandleAsync
+    clientTasks.Add(task);
+    clientTasks.RemoveWhere(task =>
+    {
+        return task.IsCompleted;
+    });
+}
+cts.Cancel();
+try
+{
+    await Task.WhenAll(clientTasks).WaitAsync(TimeSpan.FromSeconds(5));
+}
+catch (TimeoutException)
+{
+    Console.WriteLine("Timeout waiting for clients to shutdown.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Clients shutdown error: {ex}");
 }
 
-static async Task TCPClientHandleAsync(Socket connection)
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// handle separate connection.
+static async Task TCPClientHandleAsync(Socket connection, CancellationToken listenerCts)
 {
     try
     {
