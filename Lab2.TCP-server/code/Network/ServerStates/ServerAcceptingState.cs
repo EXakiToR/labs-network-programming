@@ -29,7 +29,8 @@ public sealed class ServerAcceptingState : ServerState
 
             Console.WriteLine("Connection accepted!");
             var conn = new ClientConnection(connection);
-            this._server.clientConnections.Add(conn);
+            this._server.AddClientConnection(conn);
+            _ = conn.HandleAsync();
         }
     }
 }

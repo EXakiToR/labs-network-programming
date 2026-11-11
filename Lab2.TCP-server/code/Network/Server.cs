@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using CoffeeShop.Helpers;
@@ -16,12 +17,22 @@ public sealed class Server
 
     public static Server Instance { get; } = new Server();
 
-    public HashSet<ClientConnection> clientConnections = new();
+    private readonly ConcurrentDictionary<ClientConnection, byte> _clientConnections = new();
     public Socket _listener;
 
-    public void removeClientConenction(ClientConnection conn)
+    public void AddClientConnection(ClientConnection conn)
     {
-        clientConnections.Remove(conn);
+        _clientConnections.TryAdd(conn, 0);
+    }
+
+    public void RemoveClientConnection(ClientConnection conn)
+    {
+        _clientConnections.TryRemove(conn, out _);
+    }
+
+    public ICollection<ClientConnection> GetClientConnectionsSnapshot()
+    {
+        return _clientConnections.Keys;
     }
 
     private Server()

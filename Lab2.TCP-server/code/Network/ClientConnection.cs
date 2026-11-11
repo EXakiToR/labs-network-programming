@@ -8,15 +8,15 @@ using Newtonsoft.Json;
 
 public sealed class ClientConnection
 {
+    private const int MaxMessageSize = 1024 * 1024;
+
     private Socket _connection;
     private CancellationTokenSource _cts;
-    private Task _handleTask;
 
     public ClientConnection(Socket conn)
     {
         _connection = conn;
         _cts = new CancellationTokenSource();
-        _handleTask = HandleAsync(this._cts.Token);
     }
 
     public void Cancel()
@@ -24,11 +24,13 @@ public sealed class ClientConnection
         _cts.Cancel();
     }
 
-    public async Task HandleAsync(CancellationToken cancellationToken = default)
+    public async Task HandleAsync()
     {
+        var cancellationToken = _cts.Token;
         try
         {
             List<byte> JsonBytes = new();
+            bool discardUntilNewline = false;
             byte[] buffer = new byte[1024];
             while (true)
             {
@@ -43,6 +45,14 @@ public sealed class ClientConnection
                 for (int i = 0; i < count; i++)
                 {
                     byte b = buffer[i];
+                    if (discardUntilNewline)
+                    {
+                        if (b == (byte)'\n')
+                            discardUntilNewline = false;
+
+                        continue;
+                    }
+
                     if (b == (byte)'\n')
                     {
                         string json = Encoding.UTF8.GetString(JsonBytes.ToArray());
@@ -77,21 +87,15 @@ public sealed class ClientConnection
                     }
                     else
                     {
-                        try
+                        if (JsonBytes.Count >= MaxMessageSize)
                         {
-                            if (JsonBytes.Count >= 1024 * 1024)
-                            { // 1 MB limit
-                                JsonBytes.Clear(); // Clear the buffer to avoid memory issues
-                                // need to send error message to client, but for now, just throw exception.
-                                // and need to skip all bytes till '\n' to avoid sending error message for each byte.
-                                throw new Exception("Message more than a limit of 1 mb");
-                            }
-                            JsonBytes.Add(b);
+                            JsonBytes.Clear();
+                            discardUntilNewline = true;
+                            Console.WriteLine("Message exceeds the 1 MiB limit");
+                            continue;
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error adding byte to JsonBytes: {ex.Message}");
-                        }
+
+                        JsonBytes.Add(b);
                     }
                 }
                 // recieved data, now, we can handle it
@@ -107,7 +111,7 @@ public sealed class ClientConnection
         finally
         {
             var server = Server.Instance;
-            server.removeClientConenction(this);
+            server.RemoveClientConnection(this);
             _connection.Close();
         }
     }

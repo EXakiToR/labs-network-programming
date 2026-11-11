@@ -8,7 +8,11 @@ public sealed class ServerShutDownState : ServerState
     public override async Task Run()
     {
         // exit point of the project
-        this._server.clientConnections.ToList().ForEach(conn => conn.Cancel());
+        foreach (var conn in this._server.GetClientConnectionsSnapshot())
+        {
+            conn.Cancel();
+        }
+
         await Task.Delay(10000); // wait 10 seconds before shutting down the server
 
         this._server._listener.Dispose();
