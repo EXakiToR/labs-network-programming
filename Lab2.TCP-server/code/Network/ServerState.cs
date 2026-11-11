@@ -4,7 +4,13 @@ using CoffeeShop.Helpers;
 
 public static class ServerState
 {
+    private static CancellationTokenSource? _cts;
     private static int _status = (int)ServerStatus.Accepting;
+
+    public static void SetCancellationTokenSource(CancellationTokenSource cts)
+    {
+        _cts = cts;
+    }
 
     public static ServerStatus Status => (ServerStatus)Volatile.Read(ref _status);
 

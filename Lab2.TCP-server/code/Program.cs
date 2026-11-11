@@ -20,6 +20,8 @@ using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, P
 listener.Bind(new IPEndPoint(IPAddress.Loopback, 5050));
 listener.Listen();
 
+ServerState.SetCancellationTokenSource(cts);
+
 Console.CancelKeyPress += (_, e) =>
 {
     e.Cancel = true;
@@ -27,7 +29,7 @@ Console.CancelKeyPress += (_, e) =>
 };
 
 // accept new connections.
-while (!cts.IsCancellationRequested && ServerState.Status == ServerStatus.Accepting)
+while (ServerState.Status == ServerStatus.Accepting)
 {
     // may do: create normal cancellatopn and error incapsulation.
     // not just that ugly try catch that can theoretically lead to infinite loop of errors.
