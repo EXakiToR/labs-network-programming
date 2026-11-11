@@ -2,6 +2,7 @@ namespace System.Net.Sockets;
 
 using System.Text;
 using CoffeeShop.Handlers;
+using CoffeeShop.Network;
 using CoffeeShop.Requests;
 using Newtonsoft.Json;
 
@@ -31,7 +32,11 @@ public sealed class ClientConnection
             byte[] buffer = new byte[1024];
             while (true)
             {
-                int count = await _connection.ReceiveAsync(buffer, SocketFlags.None);
+                int count = await _connection.ReceiveAsync(
+                    buffer,
+                    SocketFlags.None,
+                    cancellationToken
+                );
                 if (count == 0)
                     break;
 
@@ -72,7 +77,21 @@ public sealed class ClientConnection
                     }
                     else
                     {
-                        JsonBytes.Add(b);
+                        try
+                        {
+                            if (JsonBytes.Count >= 1024 * 1024)
+                            { // 1 MB limit
+                                JsonBytes.Clear(); // Clear the buffer to avoid memory issues
+                                // need to send error message to client, but for now, just throw exception.
+                                // and need to skip all bytes till '\n' to avoid sending error message for each byte.
+                                throw new Exception("Message more than a limit of 1 mb");
+                            }
+                            JsonBytes.Add(b);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error adding byte to JsonBytes: {ex.Message}");
+                        }
                     }
                 }
                 // recieved data, now, we can handle it
@@ -87,6 +106,8 @@ public sealed class ClientConnection
         }
         finally
         {
+            var server = Server.Instance;
+            server.removeClientConenction(this);
             _connection.Close();
         }
     }
