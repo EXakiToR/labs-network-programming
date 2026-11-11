@@ -1,14 +1,13 @@
 namespace CoffeeShop.Handlers;
 
-using System.Net.Sockets;
-using System.Text;
 using CoffeeShop.Core;
+using CoffeeShop.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 public static class OrderHandler
 {
-    public static async Task HandleOrderAsync(JToken payload, Socket connection)
+    public static async Task HandleOrderAsync(JToken payload, ClientConnection client)
     {
         try
         {
@@ -16,7 +15,7 @@ public static class OrderHandler
 
             if (!IsValidOrder(orderRequest))
             {
-                await SendResponseAsync(connection, "Invalid order");
+                await client.SendMessageAsync("Invalid order");
                 return;
             }
 
@@ -32,7 +31,7 @@ public static class OrderHandler
             {
                 if (!stockSnapshot.TryGetValue(item.Product, out int available) || available < item.Quantity)
                 {
-                    await SendResponseAsync(connection, $"Not enough stock for {item.Product}");
+                    await client.SendMessageAsync($"Not enough stock for {item.Product}");
                     return;
                 }
             }
@@ -43,23 +42,12 @@ public static class OrderHandler
             // then, need to answer to client about that is it ok or not.
             // and, if all ok, only then put into a queue the order.
 
-            await SendResponseAsync(connection, "Order received");
+            await client.SendMessageAsync("Order received");
         }
         catch (JsonException ex)
         {
             Console.WriteLine($"Error deserializing order: {ex.Message}");
-            await SendResponseAsync(connection, "Invalid order JSON");
-        }
-    }
-
-    private static async Task SendResponseAsync(Socket connection, string message)
-    {
-        byte[] bytes = Encoding.UTF8.GetBytes(message + "\n");
-
-        int sent = 0;
-        while (sent < bytes.Length)
-        {
-            sent += await connection.SendAsync(bytes.AsMemory(sent), SocketFlags.None);
+            await client.SendMessageAsync("Invalid order JSON");
         }
     }
 

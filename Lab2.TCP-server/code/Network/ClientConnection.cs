@@ -1,118 +1,146 @@
-namespace System.Net.Sockets;
-
+using System.Net.Sockets;
 using System.Text;
 using CoffeeShop.Handlers;
-using CoffeeShop.Network;
 using CoffeeShop.Requests;
 using Newtonsoft.Json;
+
+namespace CoffeeShop.Network;
 
 public sealed class ClientConnection
 {
     private const int MaxMessageSize = 1024 * 1024;
+    private static readonly UTF8Encoding Utf8 = new(false, true);
 
-    private Socket _connection;
-    private CancellationTokenSource _cts;
+    private readonly Socket _socket;
+    private readonly CancellationTokenSource _cts = new();
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
 
-    public ClientConnection(Socket conn)
+    public ClientConnection(Socket socket)
     {
-        _connection = conn;
-        _cts = new CancellationTokenSource();
+        _socket = socket;
     }
 
-    public void Cancel()
-    {
-        _cts.Cancel();
-    }
+    public void Cancel() => _cts.Cancel();
 
     public async Task HandleAsync()
     {
-        var cancellationToken = _cts.Token;
         try
         {
-            List<byte> JsonBytes = new();
-            bool discardUntilNewline = false;
-            byte[] buffer = new byte[1024];
-            while (true)
-            {
-                int count = await _connection.ReceiveAsync(
-                    buffer,
-                    SocketFlags.None,
-                    cancellationToken
-                );
-                if (count == 0)
-                    break;
-
-                for (int i = 0; i < count; i++)
-                {
-                    byte b = buffer[i];
-                    if (discardUntilNewline)
-                    {
-                        if (b == (byte)'\n')
-                            discardUntilNewline = false;
-
-                        continue;
-                    }
-
-                    if (b == (byte)'\n')
-                    {
-                        string json = Encoding.UTF8.GetString(JsonBytes.ToArray());
-                        JsonBytes.Clear();
-
-                        if (String.IsNullOrWhiteSpace(json))
-                        {
-                            continue;
-                        }
-                        try
-                        {
-                            RequestEnvelope? request =
-                                JsonConvert.DeserializeObject<RequestEnvelope>(json);
-                            if (
-                                request is null
-                                || string.IsNullOrWhiteSpace(request.Type)
-                                || request.Payload is null
-                            )
-                            {
-                                Console.WriteLine("Invalid request structure");
-                                continue;
-                            }
-                            // Here recieved valid JSON object of RequestEnvelope.
-                            await RequestDispatcher.DispatchAsync(request, _connection); // to ? to use _ = ... or await.
-
-                            Console.WriteLine($"Request Type: {request.Type}");
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error parsing JSON: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        if (JsonBytes.Count >= MaxMessageSize)
-                        {
-                            JsonBytes.Clear();
-                            discardUntilNewline = true;
-                            Console.WriteLine("Message exceeds the 1 MiB limit");
-                            continue;
-                        }
-
-                        JsonBytes.Add(b);
-                    }
-                }
-                // recieved data, now, we can handle it
-                //
-                // manage JSON, read till '\n', that will be one complete JSON message.
-                await _connection.SendAsync(buffer.AsMemory(0, count), SocketFlags.None);
-            }
+            await ReadRequestsAsync(_cts.Token);
         }
+        catch (OperationCanceledException) when (_cts.IsCancellationRequested) { }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in HandleAssync: {ex.Message}");
+            Console.WriteLine($"Error handling client: {ex.Message}");
         }
         finally
         {
-            var server = Server.Instance;
-            server.RemoveClientConnection(this);
-            _connection.Close();
+            Server.Instance.RemoveClientConnection(this);
+            Cancel();
+            _socket.Dispose();
         }
+    }
+
+    public async Task SendMessageAsync(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        if (message.Contains('\n'))
+            throw new ArgumentException("A message must fit on one line.", nameof(message));
+
+        ReadOnlyMemory<byte> remaining = Utf8.GetBytes(message + "\n");
+        var cancellationToken = _cts.Token;
+        await _sendLock.WaitAsync(cancellationToken);
+        try
+        {
+            while (!remaining.IsEmpty)
+            {
+                int sent = await _socket.SendAsync(remaining, SocketFlags.None, cancellationToken);
+                if (sent == 0)
+                    throw new IOException("The connection closed while sending a message.");
+
+                remaining = remaining[sent..];
+            }
+        }
+        catch
+        {
+            Cancel();
+            throw;
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
+    }
+
+    private async Task ReadRequestsAsync(CancellationToken cancellationToken)
+    {
+        var buffer = new byte[1024];
+        var message = new List<byte>();
+        bool discardUntilNewline = false;
+
+        while (true)
+        {
+            int count = await _socket.ReceiveAsync(buffer, SocketFlags.None, cancellationToken);
+            if (count == 0)
+                return;
+
+            for (int i = 0; i < count; i++)
+            {
+                byte value = buffer[i];
+                if (value == (byte)'\n')
+                {
+                    if (!discardUntilNewline && message.Count > 0)
+                        await DispatchMessageAsync(message);
+
+                    message.Clear();
+                    discardUntilNewline = false;
+                    continue;
+                }
+
+                if (discardUntilNewline)
+                    continue;
+
+                if (message.Count == MaxMessageSize)
+                {
+                    message.Clear();
+                    discardUntilNewline = true;
+                    Console.WriteLine("Message exceeds the 1 MiB limit");
+                    continue;
+                }
+
+                message.Add(value);
+            }
+        }
+    }
+
+    private async Task DispatchMessageAsync(List<byte> message)
+    {
+        RequestEnvelope? request;
+        try
+        {
+            string json = Utf8.GetString(message.ToArray());
+            if (string.IsNullOrWhiteSpace(json))
+                return;
+
+            request = RequestEnvelope.Parse(json);
+        }
+        catch (DecoderFallbackException)
+        {
+            Console.WriteLine("Invalid UTF-8 in request");
+            return;
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"Error parsing JSON: {ex.Message}");
+            return;
+        }
+
+        if (request is null)
+        {
+            Console.WriteLine("Invalid request structure");
+            return;
+        }
+
+        await RequestDispatcher.DispatchAsync(request, this);
     }
 }
