@@ -25,6 +25,9 @@ public abstract class ServerState
 
     public async Task GoToState(ServerState state)
     {
+        if (GetType() == state.GetType())
+            return;
+
         this.Cancel();
         this._server.SetState(state);
         await this._server.Run();
