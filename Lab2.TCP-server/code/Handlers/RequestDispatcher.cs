@@ -16,17 +16,18 @@ public static class RequestDispatcher
 
     public static async Task DispatchAsync(RequestEnvelope request, Socket connection)
     {
-        switch (request.Type.ToLower())
-        {
-            case "order":
-                await OrderHandler.HandleOrderAsync(request.Payload, connection);
-                break;
-            //classe "menu":
-            //await _menuHandler.HandleMenuRequestAsync(connection);
-            //     break;
-            default:
-                Console.WriteLine($"Unknown request type: {request.Type}");
-                break;
-        }
+        // switch (request.Type.ToLower())
+        // {
+        //     case "order":
+        //         await OrderHandler.HandleOrderAsync(request.Payload, connection);
+        //         break;
+        //     //classe "menu":
+        //     //await _menuHandler.HandleMenuRequestAsync(connection);
+        //     //     break;
+        //     default:
+        //         Console.WriteLine($"Unknown request type: {request.Type}");
+        //         break;
+        // }
+        Console.WriteLine($"Received request of type: {request.Type}");
     }
 }
