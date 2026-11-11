@@ -8,17 +8,22 @@ using Newtonsoft.Json;
 public sealed class ClientConnection
 {
     private Socket _connection;
-    private CancellationToken _cancellationToken;
+    private CancellationTokenSource _cts;
     private Task _handleTask;
 
-    public ClientConnection(Socket conn, CancellationToken ct)
+    public ClientConnection(Socket conn)
     {
         _connection = conn;
-        _cancellationToken = ct;
-        _handleTask = HandleAsync();
+        _cts = new CancellationTokenSource();
+        _handleTask = HandleAsync(this._cts.Token);
     }
 
-    public async Task HandleAsync()
+    public void Cancel()
+    {
+        _cts.Cancel();
+    }
+
+    public async Task HandleAsync(CancellationToken cancellationToken = default)
     {
         try
         {

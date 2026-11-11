@@ -13,7 +13,7 @@ public sealed class ServerAcceptingState : ServerState
         {
             Socket connection;
             connection = await this._server._listener.AcceptAsync();
-            var conn = new ClientConnection(connection, _cts.Token);
+            var conn = new ClientConnection(connection);
             this._server.clientConnections.Add(conn);
         }
     }
