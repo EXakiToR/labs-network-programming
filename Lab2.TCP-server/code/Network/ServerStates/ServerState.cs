@@ -22,14 +22,4 @@ public abstract class ServerState
     {
         this._cts.Cancel();
     }
-
-    public async Task GoToState(ServerState state)
-    {
-        if (GetType() == state.GetType())
-            return;
-
-        this.Cancel();
-        this._server.SetState(state);
-        await this._server.Run();
-    }
 }

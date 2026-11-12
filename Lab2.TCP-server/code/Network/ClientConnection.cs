@@ -8,7 +8,7 @@ namespace CoffeeShop.Network;
 
 public sealed class ClientConnection
 {
-    private const int MaxMessageSize = 1024 * 1024;
+    private const int MaxMessageSize = 1024 * 1024; // 1 MiB
     private static readonly UTF8Encoding Utf8 = new(false, true);
 
     private readonly Socket _socket;

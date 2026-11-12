@@ -43,7 +43,7 @@ public sealed class Server
         Console.CancelKeyPress += async (sender, e) =>
         {
             e.Cancel = true; // Prevent the process from terminating.
-            await this._state.GoToState(new ServerShutDownState(this));
+            await GoToState(new ServerShutDownState(this));
         };
 
         _ = MemoryMonitoringTask();
@@ -56,14 +56,16 @@ public sealed class Server
         this._listener.Listen();
     }
 
-    public void SetState(ServerState state)
-    {
-        this._state = state;
-    }
+    // use this ONLY FROM _state.GoToState() to change the state, because it will cancel the current state and run the new one.
 
-    private async Task GoToState(ServerState state)
+    // use only this from this class
+    private async Task GoToState(ServerState nextState)
     {
-        await this._state.GoToState(state);
+        if (this._state.GetType() == nextState.GetType())
+            return;
+        _state.Cancel();
+        this._state = nextState;
+        await this._state.Run();
     }
 
     public async Task Run()
@@ -84,15 +86,15 @@ public sealed class Server
                 // Evaluate memory thresholds.
                 if (heapUsagePercentage > 90.0)
                 {
-                    await this._state.GoToState(new ServerShutDownState(this));
+                    await GoToState(new ServerShutDownState(this));
                 }
                 else if (heapUsagePercentage > 80.0)
                 {
-                    await this._state.GoToState(new ServerDemandingState(this));
+                    await GoToState(new ServerDemandingState(this));
                 }
                 else if (heapUsagePercentage < 70.0)
                 {
-                    await this._state.GoToState(new ServerAcceptingState(this));
+                    await GoToState(new ServerAcceptingState(this));
                 }
             }
         }
