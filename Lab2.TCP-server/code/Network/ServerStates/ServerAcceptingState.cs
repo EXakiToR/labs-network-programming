@@ -14,11 +14,16 @@ public sealed class ServerAcceptingState : ServerState
             Socket connection;
             try
             {
-                connection = await this._server._listener.AcceptAsync();
+                connection = await this._server._listener.AcceptAsync(_cts.Token);
             }
             catch (ObjectDisposedException)
             {
                 Console.WriteLine("Listener socket has been disposed. Exiting accepting loop.");
+                break;
+            }
+            catch (OperationCanceledException) when (_cts.IsCancellationRequested)
+            {
+                Console.WriteLine("Accepting new connections has been canceled.");
                 break;
             }
             catch (Exception ex)

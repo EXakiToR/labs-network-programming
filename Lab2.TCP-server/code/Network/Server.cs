@@ -22,12 +22,14 @@ public sealed class Server
 
     public void AddClientConnection(ClientConnection conn)
     {
-        _clientConnections.TryAdd(conn, 0);
+        if (!_clientConnections.TryAdd(conn, 0))
+            throw new InvalidOperationException("Connection already registered.");
     }
 
     public void RemoveClientConnection(ClientConnection conn)
     {
-        _clientConnections.TryRemove(conn, out _);
+        if (!_clientConnections.TryRemove(conn, out _))
+            throw new InvalidOperationException("Connection not found.");
     }
 
     public ICollection<ClientConnection> GetClientConnectionsSnapshot()
@@ -38,6 +40,12 @@ public sealed class Server
     private Server()
     {
         this._state = new ServerAcceptingState(this);
+        Console.CancelKeyPress += async (sender, e) =>
+        {
+            e.Cancel = true; // Prevent the process from terminating.
+            await this._state.GoToState(new ServerShutDownState(this));
+        };
+
         _ = MemoryMonitoringTask();
         this._listener = new Socket(
             AddressFamily.InterNetwork,
