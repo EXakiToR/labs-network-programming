@@ -90,7 +90,10 @@ public sealed class ClientConnection
                 if (value == (byte)'\n')
                 {
                     if (!discardUntilNewline && message.Count > 0)
-                        await DispatchMessageAsync(message);
+                    {
+                        var messageCopy = message.ToList();
+                        _ = DispatchMessageAsync(messageCopy);
+                    }
 
                     message.Clear();
                     discardUntilNewline = false;
@@ -115,32 +118,43 @@ public sealed class ClientConnection
 
     private async Task DispatchMessageAsync(List<byte> message)
     {
-        RequestEnvelope? request;
+        bool fail = false;
+        RequestEnvelope? request = null;
         try
         {
             string json = Utf8.GetString(message.ToArray());
             if (string.IsNullOrWhiteSpace(json)) // not an error, just not a request.
-                return;
+                fail = true;
 
             request = RequestEnvelope.Parse(json);
+            if (request is null)
+            {
+                fail = true;
+            }
         }
         catch (DecoderFallbackException)
         {
             Console.WriteLine("Invalid UTF-8 in request");
-            return;
+            fail = true;
         }
         catch (JsonException ex)
         {
             Console.WriteLine($"Error parsing JSON: {ex.Message}");
-            return;
+            fail = true;
         }
-
-        if (request is null)
+        catch (Exception ex)
         {
-            Console.WriteLine("Invalid request structure");
+            Console.WriteLine($"Unexpected error: {ex}");
+            fail = true;
+        }
+
+        if (fail || request is null) // duplicate for warning ignoring
+        {
+            await this.SendMessageAsync("Invalid request");
             return;
         }
 
+        await this.SendMessageAsync($"Request of type {request.Type} received");
         await RequestDispatcher.DispatchAsync(request, this);
     }
 }

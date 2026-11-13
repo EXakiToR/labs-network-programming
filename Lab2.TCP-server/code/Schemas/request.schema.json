@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "Type": {
+      "enum": ["menu", "register", "order", "delivery"]
+    },
+    "Payload": {}
+  },
+  "required": ["Type", "Payload"],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "Type": { "const": "menu" },
+        "Payload": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      }
+    },
+    {
+      "properties": {
+        "Type": { "const": "register" },
+        "Payload": {
+          "type": "object",
+          "properties": {
+            "Role": {
+              "enum": ["client", "provider"]
+            }
+          },
+          "required": ["Role"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "Type": { "enum": ["order", "delivery"] },
+        "Payload": {
+          "$ref": "#/$defs/itemsRequest"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "itemsRequest": {
+      "type": "object",
+      "properties": {
+        "Items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "Product": {
+                "enum": ["coffee", "tea", "croissant"]
+              },
+              "Quantity": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["Product", "Quantity"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["Items"],
+      "additionalProperties": false
+    }
+  }
+}

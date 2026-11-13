@@ -8,7 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="9.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Schemas/request.schema.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 
 </Project>
