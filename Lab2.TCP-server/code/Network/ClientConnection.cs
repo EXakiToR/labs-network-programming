@@ -104,7 +104,7 @@ public sealed class ClientConnection
                 {
                     message.Clear();
                     discardUntilNewline = true;
-                    Console.WriteLine("Message exceeds the 1 MiB limit");
+                    Console.WriteLine("Message exceeds the 1 MiB limit"); // recieve new maessage. even with that previous was too long
                     continue;
                 }
 
@@ -119,7 +119,7 @@ public sealed class ClientConnection
         try
         {
             string json = Utf8.GetString(message.ToArray());
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(json)) // not an error, just not a request.
                 return;
 
             request = RequestEnvelope.Parse(json);

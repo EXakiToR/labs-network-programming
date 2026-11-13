@@ -56,9 +56,6 @@ public sealed class Server
         this._listener.Listen();
     }
 
-    // use this ONLY FROM _state.GoToState() to change the state, because it will cancel the current state and run the new one.
-
-    // use only this from this class
     private async Task GoToState(ServerState nextState)
     {
         if (this._state.GetType() == nextState.GetType())
