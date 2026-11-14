@@ -14,21 +14,28 @@ public static class RequestDispatcher
     //     _menuHandler = menuHandler;
     // }
 
-    public static Task DispatchAsync(RequestEnvelope request, ClientConnection client)
+    public static async Task DispatchAsync(RequestEnvelope request, ClientConnection client)
     {
-        // switch (request.Type.ToLower())
-        // {
-        //     case "order":
-        //         await OrderHandler.HandleOrderAsync(request.Payload, client);
-        //         break;
-        //     //classe "menu":
-        //     //await _menuHandler.HandleMenuRequestAsync(client);
-        //     //     break;
-        //     default:
-        //         Console.WriteLine($"Unknown request type: {request.Type}");
-        //         break;
-        // }
+        switch (request.Type.ToLower())
+        {
+            case "order":
+                await OrderHandler.HandleAsync(request.Payload, client);
+                break;
+            case "menu":
+                await MenuHandler.HandleAsync(request.Payload, client);
+                break;
+
+            // case "regiister":
+            //     await RegisterHandler.HandleAsync(client);
+            //     break;
+            //
+            // case "delivery":
+            //     await DeliveryHadler.HandleAsync(client);
+            //     break;
+            default:
+                Console.WriteLine($"Unknown request type: {request.Type}");
+                break;
+        }
         Console.WriteLine($"Received request of type: {request.Type}");
-        return Task.CompletedTask;
     }
 }

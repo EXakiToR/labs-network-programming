@@ -1,5 +1,7 @@
 //An order is a list of products with their quantities.
 
+namespace CoffeeShop.Requests;
+
 // if "type" is "order", then the payload is an OrderRequest object.
 record OrderRequest(List<OrderItem> Items);
 

@@ -2,12 +2,13 @@ namespace CoffeeShop.Handlers;
 
 using CoffeeShop.Core;
 using CoffeeShop.Network;
+using CoffeeShop.Requests;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 public static class OrderHandler
 {
-    public static async Task HandleOrderAsync(JToken payload, ClientConnection client)
+    public static async Task HandleAsync(JToken payload, ClientConnection client)
     {
         try
         {
@@ -29,7 +30,10 @@ public static class OrderHandler
             var stockSnapshot = Stock.GetSnapshot();
             foreach (OrderItem item in orderRequest.Items)
             {
-                if (!stockSnapshot.TryGetValue(item.Product, out int available) || available < item.Quantity)
+                if (
+                    !stockSnapshot.TryGetValue(item.Product, out int available)
+                    || available < item.Quantity
+                )
                 {
                     await client.SendMessageAsync($"Not enough stock for {item.Product}");
                     return;
@@ -37,7 +41,6 @@ public static class OrderHandler
             }
             // at this point, we know that stock has enough for all items in the order.
             // now, put in the Queue.
-            
 
             // then, need to answer to client about that is it ok or not.
             // and, if all ok, only then put into a queue the order.

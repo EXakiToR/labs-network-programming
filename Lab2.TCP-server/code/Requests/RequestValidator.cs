@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Json.Schema;
 
+namespace CoffeeShop.Requests;
+
 public static class RequestValidator
 {
     private static readonly JsonSchema Schema = JsonSchema.FromFile(
