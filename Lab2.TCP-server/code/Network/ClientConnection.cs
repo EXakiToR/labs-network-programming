@@ -15,6 +15,8 @@ public sealed class ClientConnection
     private readonly CancellationTokenSource _cts = new();
     private readonly SemaphoreSlim _sendLock = new(1, 1);
 
+    public ClientRole Role { get; set; } = ClientRole.Undefined;
+
     public ClientConnection(Socket socket)
     {
         _socket = socket;
@@ -157,4 +159,11 @@ public sealed class ClientConnection
         await this.SendMessageAsync($"Request of type {request.Type} received");
         await RequestDispatcher.DispatchAsync(request, this);
     }
+}
+
+public enum ClientRole
+{
+    Undefined,
+    RegisteredUser,
+    DeliveryPerson,
 }

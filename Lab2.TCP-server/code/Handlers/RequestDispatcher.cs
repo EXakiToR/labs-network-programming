@@ -25,9 +25,9 @@ public static class RequestDispatcher
                 await MenuHandler.HandleAsync(request.Payload, client);
                 break;
 
-            // case "regiister":
-            //     await RegisterHandler.HandleAsync(client);
-            //     break;
+            case "register":
+                await RegisterHandler.HandleAsync(request.Payload, client);
+                break;
             //
             // case "delivery":
             //     await DeliveryHadler.HandleAsync(client);

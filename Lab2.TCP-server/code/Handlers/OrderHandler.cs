@@ -12,6 +12,12 @@ public static class OrderHandler
     {
         try
         {
+            if (client.Role != ClientRole.RegisteredUser)
+            {
+                await client.SendMessageAsync("You are not registered as a user");
+                return;
+            }
+
             OrderRequest? orderRequest = payload.ToObject<OrderRequest>();
 
             if (!IsValidOrder(orderRequest))
