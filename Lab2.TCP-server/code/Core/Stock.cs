@@ -10,9 +10,9 @@ public static class Stock
 
     private static Dictionary<string, int> _products = new()
     {
-        ["coffee"] = 23,
-        ["tea"] = 10,
-        ["croissant"] = 12,
+        ["coffee"] = 0,
+        ["tea"] = 0,
+        ["croissant"] = 0,
     };
 
     public static Dictionary<string, int> GetSnapshot()

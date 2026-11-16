@@ -17,6 +17,11 @@ public static class DeliveryHandler
                 await client.SendMessageAsync("You are not registered as a delivery person");
                 return;
             }
+            DeliveryRequest? deliveryRequest = payload.ToObject<DeliveryRequest>();
+            foreach (OrderItem item in deliveryRequest!.Items)
+            {
+                Stock.Add(new Dictionary<string, int> { { item.Product, item.Quantity } });
+            }
         }
         catch (JsonException ex)
         {

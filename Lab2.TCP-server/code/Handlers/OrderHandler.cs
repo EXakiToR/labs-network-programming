@@ -48,6 +48,14 @@ public static class OrderHandler
             // at this point, we know that stock has enough for all items in the order.
             // now, put in the Queue.
 
+            Order order = new Order
+            {
+                Items = orderRequest.Items,
+                ClientId = client.Id,
+                Timestamp = DateTime.UtcNow,
+            };
+            await OrderQueue.EnqueueAsync(orderRequest);
+
             // then, need to answer to client about that is it ok or not.
             // and, if all ok, only then put into a queue the order.
 
