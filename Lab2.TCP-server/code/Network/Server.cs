@@ -18,6 +18,15 @@ public sealed class Server
 
     internal Socket Listener { get; } = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
+    internal bool IsShuttingDown
+    {
+        get
+        {
+            lock (_stateLock)
+                return _state is ServerShutDownState;
+        }
+    }
+
     private Server()
     {
         _state = new ServerAcceptingState(this);
