@@ -5,9 +5,10 @@ public sealed class ServerShutDownState : ServerState
     public ServerShutDownState(Server server)
         : base(server) { }
 
-    public override Task Run()
+    public override async Task Run()
     {
         _server.Listener.Dispose();
-        return Task.CompletedTask;
+        Console.WriteLine("Server is shutting down. Waiting 10 seconds for accepted work to finish.");
+        await Task.Delay(TimeSpan.FromSeconds(10));
     }
 }

@@ -7,10 +7,13 @@ dotnet build CoffeeShop.csproj
 dotnet run --project CoffeeShop.csproj -- 5050
 ```
 
-The port defaults to `5050`. The server listens on all IPv4 interfaces. Press
-Ctrl+C to stop the server and cancel unfinished orders. On the first run,
-each product starts with 10–50 units. Later runs load `stock.json` from the
-server's working directory.
+The port defaults to `5050`. The server listens on all IPv4 interfaces. On
+Ctrl+C, it stops taking new connections and requests. Accepted orders can
+finish and send their ready messages for 10 seconds. The server then closes
+the remaining connections and returns the stock for any unfinished orders.
+
+On the first run, each product starts with 10–50 units. Later runs load
+`stock.json` from the server's working directory.
 
 ## TCP protocol
 
