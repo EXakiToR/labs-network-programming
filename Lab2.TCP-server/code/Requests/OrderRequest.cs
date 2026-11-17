@@ -1,10 +1,14 @@
-//An order is a list of products with their quantities.
-
 namespace CoffeeShop.Requests;
 
-// if "type" is "order", then the payload is an OrderRequest object.
 record OrderRequest(List<OrderItem> Items);
 
-record OrderItem(string Product, int Quantity);
-
-// done in generic way in case if there would be more types producrs, not just 'coffee', 'tea' and 'crossant'.
+record OrderItem(string Product, int Quantity)
+{
+    public static Dictionary<string, int> GetQuantities(IEnumerable<OrderItem> items)
+    {
+        var quantities = new Dictionary<string, int>();
+        foreach (var item in items)
+            quantities[item.Product] = checked(quantities.GetValueOrDefault(item.Product) + item.Quantity);
+        return quantities;
+    }
+}

@@ -7,7 +7,10 @@ public sealed class ServerDemandingState : ServerState
 
     public override async Task Run()
     {
-        // don't accept new connections, so, basicly, do notjng
-        await Task.Delay(Timeout.Infinite, _cts.Token);
+        try
+        {
+            await Task.Delay(Timeout.Infinite, _cts.Token);
+        }
+        catch (OperationCanceledException) when (_cts.IsCancellationRequested) { }
     }
 }

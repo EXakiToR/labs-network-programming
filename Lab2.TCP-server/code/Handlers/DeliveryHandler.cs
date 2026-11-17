@@ -1,62 +1,35 @@
-namespace CoffeeShop.Handlers;
-
 using CoffeeShop.Core;
 using CoffeeShop.Network;
 using CoffeeShop.Requests;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+namespace CoffeeShop.Handlers;
+
 public static class DeliveryHandler
 {
     public static async Task HandleAsync(JToken payload, ClientConnection client)
     {
+        if (client.Role != ClientRole.DeliveryPerson)
+        {
+            client.Log("Delivery refused. Connection is not registered as a provider");
+            await client.SendMessageAsync("You are not registered as a delivery person");
+            return;
+        }
+
         try
         {
-            if (client.Role != ClientRole.DeliveryPerson)
-            {
-                await client.SendMessageAsync("You are not registered as a delivery person");
-                return;
-            }
-            DeliveryRequest? deliveryRequest = payload.ToObject<DeliveryRequest>();
-            foreach (OrderItem item in deliveryRequest!.Items)
-            {
-                Stock.Add(new Dictionary<string, int> { { item.Product, item.Quantity } });
-            }
+            var items = OrderItem.GetQuantities(payload.ToObject<DeliveryRequest>()!.Items);
+            Stock.Add(items);
+            client.Log($"Delivery received: {string.Join(", ", items.Select(item => $"{item.Value} {item.Key}"))}");
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or OverflowException or ArgumentException or IOException or UnauthorizedAccessException)
         {
-            Console.WriteLine($"Error deserializing order: {ex.Message}");
-            await client.SendMessageAsync("Invalid order JSON");
-        }
-    }
-
-    private static readonly HashSet<string> AllowedProducts = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "coffee",
-        "tea",
-        "croissant",
-    };
-
-    private static bool IsValidDelivery(OrderRequest? order)
-    {
-        if (order?.Items is null || order.Items.Count == 0)
-            return false;
-
-        foreach (OrderItem? item in order.Items)
-        {
-            if (item is null)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(item.Product))
-                return false;
-
-            if (!AllowedProducts.Contains(item.Product))
-                return false;
-
-            if (item.Quantity <= 0)
-                return false;
+            client.Log($"Delivery error: {ex.Message}");
+            await client.SendMessageAsync("Could not add delivery to stock");
+            return;
         }
 
-        return true;
+        await client.SendMessageAsync("Delivery added to stock");
     }
 }

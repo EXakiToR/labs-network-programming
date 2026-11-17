@@ -14,7 +14,7 @@ public sealed class ServerAcceptingState : ServerState
             Socket connection;
             try
             {
-                connection = await this._server._listener.AcceptAsync(_cts.Token);
+                connection = await _server.Listener.AcceptAsync(_cts.Token);
             }
             catch (ObjectDisposedException)
             {
@@ -32,10 +32,17 @@ public sealed class ServerAcceptingState : ServerState
                 continue;
             }
 
-            Console.WriteLine("Connection accepted!");
-            var conn = new ClientConnection(connection);
-            this._server.AddClientConnection(conn);
-            _ = conn.HandleAsync();
+            try
+            {
+                var conn = new ClientConnection(connection);
+                _server.AddClientConnection(conn);
+                conn.Start();
+            }
+            catch (SocketException ex)
+            {
+                Console.WriteLine($"Error opening accepted connection: {ex.Message}");
+                connection.Dispose();
+            }
         }
     }
 }
