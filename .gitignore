@@ -383,3 +383,5 @@ numbers*.txt
 
 
 /Lab2.TCP-server/code/stock.json
+*.class
+/Lab2.TCP-server/stock.json
