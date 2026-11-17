@@ -8,9 +8,10 @@ public static class OrderQueue
         new UnboundedChannelOptions { SingleReader = false, SingleWriter = false }
     );
 
-    public static ValueTask EnqueueAsync(Order order)
+    internal static void Enqueue(Order order)
     {
-        return _queue.Writer.WriteAsync(order);
+        if (!_queue.Writer.TryWrite(order))
+            throw new InvalidOperationException("The order queue is closed.");
     }
 
     public static IAsyncEnumerable<Order> ReadAllAsync(
