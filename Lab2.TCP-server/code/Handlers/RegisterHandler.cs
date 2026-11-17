@@ -16,7 +16,7 @@ public static class RegisterHandler
         }
 
         string role = payload.ToObject<RegisterRequest>()!.Role;
-        await client.SendMessageAsync("Register request received");
+        await client.SendMessageAsync($"Registered as {role}");
         client.Role = role == "provider" ? ClientRole.DeliveryPerson : ClientRole.RegisteredUser;
         client.Log($"Registered as {role}");
         if (client.Role == ClientRole.DeliveryPerson)

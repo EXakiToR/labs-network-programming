@@ -380,3 +380,6 @@ numbers*.txt
 
 
 .DS_Store
+
+
+/Lab2.TCP-server/code/stock.json
