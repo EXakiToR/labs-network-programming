@@ -1,25 +1,23 @@
 namespace CoffeeShop.Core;
 
+using System.Threading;
+using CoffeeShop.Core;
+using CoffeeShop.Network;
+
 public sealed class Workers
 {
-    private int _count = 0;
-
-    Thread[] workers;
+    private readonly Task[] workers;
 
     Workers(int count)
     {
-        _count = count;
-        workers = new Thread[count];
     }
 
-    public void AddWorker()
+    public void Wait()
     {
-        Interlocked.Increment(ref _count);
     }
 
-    public void RemoveWorker()
+    public void Stop()
     {
-        Interlocked.Decrement(ref _count);
     }
 
     private void WorkerLoop()
@@ -27,6 +25,47 @@ public sealed class Workers
         while (true)
         {
             // get order from queue
+            Order order = OrderQueue.Dequeue();
+            ClientConnection client = order.Client;
+
+            // check if can process order (check stock)
+            Dictionary<string, int> orderItems = Stock.GetSnapshot();
+            foreach (var (product, quantity) in order.Items)
+            {
+                if (!orderItems.TryGetValue(product, out int available) || available < quantity)
+                {
+                    // handle insufficient stock
+                    Console.WriteLine($"Insufficient stock for product: {product}");
+                    // send response to client about insufficient stock
+                    continue;
+                }
+            }
+
+            try
+            {
+                foreach (var (product, quantity) in order.Items)
+                {
+                    if (!Stock.TryTake(new Dictionary<string, int> { { product, quantity } }))
+                    {
+                        // handle insufficient stock
+                        Console.WriteLine($"Insufficient stock for product: {product}");
+                        // send response to client about insufficient stock
+
+                        // actual preparation with waiting (Thread,Sleep simulates preparing)
+                        for (int i = 0; i < quantity; i++)
+                        {
+                            Console.WriteLine($"Preparing {product} for client");
+                            Thread.Sleep(...); // Simulate time taken to prepare each item
+                        }
+                        continue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing order: {ex.Message}");
+                // send response to client about error
+            }
             // process order
             // update stock
             // send response to client

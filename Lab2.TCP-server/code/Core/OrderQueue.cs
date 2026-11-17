@@ -19,4 +19,10 @@ public static class OrderQueue
     {
         return _queue.Reader.ReadAllAsync(cancellationToken);
     }
+
+    public static Order Dequeue()
+    {
+        return _queue.Reader.ReadAsync().GetAwaiter().GetResult();
+    }
+
 }
