@@ -44,6 +44,19 @@ public sealed class ClientConnection
         {
             Log("Connection accepted");
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+            _socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 30);
+            _socket.SetSocketOption(
+                SocketOptionLevel.Tcp,
+                SocketOptionName.TcpKeepAliveInterval,
+                10
+            );
+            _socket.SetSocketOption(
+                SocketOptionLevel.Tcp,
+                SocketOptionName.TcpKeepAliveRetryCount,
+                3
+            );
+
             await ReadRequestsAsync(_cts.Token);
         }
         catch (OperationCanceledException) when (_cts.IsCancellationRequested) { }
