@@ -151,7 +151,6 @@ public sealed class ClientConnection
             return;
         }
 
-        await SendMessageAsync($"Request of type {request.Type} received");
         await RequestDispatcher.DispatchAsync(request, this);
     }
 }
