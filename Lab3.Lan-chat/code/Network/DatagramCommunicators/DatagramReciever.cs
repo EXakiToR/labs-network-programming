@@ -112,10 +112,28 @@ public sealed class DatagramReceiver
                 && document.RootElement.TryGetProperty("Type", out JsonElement kind)
                 && kind.ValueKind == JsonValueKind.String ? kind.GetString()! : "Unknown";
         }
-        catch (JsonException) { return "Unknown"; }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            return "Unknown";
+        }
     }
 
     private static Datagram Deserialize(ReadOnlySpan<byte> json, out string type)
+    {
+        type = "Unknown";
+        try
+        {
+            return DeserializeJson(json, out type);
+        }
+        catch (InvalidOperationException exception)
+        {
+            // JsonDocument can accept an escaped surrogate that GetString cannot decode.
+            // Normalize that parsing failure so ReceiveReady logs and drops the packet.
+            throw new JsonException("Invalid Unicode or JSON value in datagram.", exception);
+        }
+    }
+
+    private static Datagram DeserializeJson(ReadOnlySpan<byte> json, out string type)
     {
         type = "Unknown";
         using JsonDocument document = JsonDocument.Parse(json.ToArray());
